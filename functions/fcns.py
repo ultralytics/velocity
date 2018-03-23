@@ -100,7 +100,6 @@ def getCameraParams(fullfilename, platform='iPhone 6s'):
 
         if isvideo:  # 4k VIDEO 3840x2160
             cap = cv2.VideoCapture(fullfilename)
-            # V = VideoReader(fullfilename)
             kltBlockSize = [51, 51]
 
             # https://docs.opencv.org/3.1.0/d8/dfe/classcv_1_1VideoCapture.html#aeb1644641842e6b104f244f049648f94
@@ -115,8 +114,8 @@ def getCameraParams(fullfilename, platform='iPhone 6s'):
 
             skew = 0
             focalLength_pix = np.array([3486, 3486]) * diagonalRatio
-            cap.release()  # Release the video capture object
         else:  # 12MP IMAGE 4032x3024
+            cap = []
             exif = importEXIF(fullfilename)
             kltBlockSize = [21, 21]
 
@@ -181,7 +180,7 @@ def getCameraParams(fullfilename, platform='iPhone 6s'):
         'frame_count': frame_count,
         'params': params
     }
-    return cam
+    return cam, cap
 
 
 def importEXIF(fullfilename):
@@ -237,15 +236,15 @@ def KLTwarp(KLT, Ixy, I, Im1, pm1, vm1, mode):
     #     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     #
     #     # calculate optical flow
-    #     p1, st, err = cv2.calcOpticalFlowPyrLK(old_gray, frame_gray, p0, None, **lk_params)
+    #     p, st, err = cv2.calcOpticalFlowPyrLK(old_gray, frame_gray, p, None, **lk_params)
     #
     #     # Select good points
-    #     good_new = p1[st == 1]
-    #     good_old = p0[st == 1]
+    #     good_new = p[st == 1]
+    #     good_old = p[st == 1]
     #
     #     # Now update the previous frame and previous points
     #     old_gray = frame_gray.copy()
-    #     p0 = good_new.reshape(-1, 1, 2)
+    #     p = good_new.reshape(-1, 1, 2)
 
     return None
 

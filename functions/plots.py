@@ -9,15 +9,19 @@ from bokeh.layouts import row, column, widgetbox
 # import matplotlib.pyplot as plt
 
 
-def plot1image(cam, im, p0):
-    ps = p0.squeeze()
-    h, w = im.shape
-
+def plot1image(cam, im, P):
     # Bokeh Plotting
     bkio.reset_output()
     bkio.output_file('bokeh plots.html', title='image plots')
+    h, w = im.shape
+    n = P.shape[2]
+    colors = bokeh_colors(n)
 
-    p = bkplot.figure(x_range=(0, w), y_range=(h, 0), plot_width=round(800 * w / h), plot_height=800,
+    x = P[0,]  # x
+    y = P[1,]  # y
+    v = P[2,]  # valid
+
+    p = bkplot.figure(x_range=(0, w), y_range=(h, 0), plot_width=round(900 * w / h), plot_height=900,
                       title=cam['filename'],
                       x_axis_label='pixel (1 - ' + str(w) + ')',
                       y_axis_label='pixel (1 - ' + str(h) + ')',
@@ -45,19 +49,30 @@ def plot1image(cam, im, p0):
     # Plot clear rectangle
     p.quad(top=[h], bottom=[0], left=[0], right=[w], alpha=0)  # clear rectange hack for tooltip image x,y
 
-    # Plot current KLT points
-    p.circle(ps[:, 0], ps[:, 1], color='blue', legend='p0')
-    p.legend.click_policy = 'hide'
+    # Plot license plate outline
+    p.patch(x[0:4, 0], y[0:4, 0], alpha=0.3, line_width=4)
+
+    # Plot points
+    # p.circle(P[0,].ravel(), P[1,].ravel(), color='blue', legend='KLT Points')
+    for i in np.arange(P.shape[2]):
+        p.circle(x[:, i], y[:, i], color=colors[i], legend='image ' + str(i))
+
+    # Plot lines
+    p.multi_line(x.tolist(), y.tolist(), color='white', alpha=.8, line_width=1)
 
     # Show plot
     # widgets = widgetbox(slider)
     # bkio.show(column(p, widgets))  # open a browser
-
-    p2 = bkplot.figure(x_range=(0, w), y_range=(h, 0), plot_width=round(800 * w / h), plot_height=800,
-                       title=cam['filename'],
-                       x_axis_label='pixel (1 - ' + str(w) + ')',
-                       y_axis_label='pixel (1 - ' + str(h) + ')',
-                       tools='box_zoom,pan,save,reset,wheel_zoom,crosshair',
-                       active_scroll='wheel_zoom',
-                       active_inspect=None)
+    p.legend.click_policy = 'hide'
     bkio.show(p)  # open a browser
+
+
+def bokeh_colors(n):
+    # https: // bokeh.pydata.org / en / latest / docs / reference / palettes.html
+    # returns appropriate 10, 20 or 256 colors for plotting. n is the maximum required colors
+    if n < 11:
+        return bkpalettes.Category10[10]
+    elif n < 21:
+        return bkpalettes.Category20[20]
+    else:
+        return bkpalettes.Viridis256
