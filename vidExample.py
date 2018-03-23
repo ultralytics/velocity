@@ -10,7 +10,7 @@ pathname = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/'
 if isVideo:
     filename = pathname + 'IMG_4134.MOV'
     startFrame = 19  # 0 indexed
-    readSpeed = 2  # read every # frames. ref = 1 reads every frame, ref = 2 skips every other frame, etc.
+    readSpeed = 1  # read every # frames. ref = 1 reads every frame, ref = 2 skips every other frame, etc.
     n = 2  # number of frames to read
     frames = np.arange(0, n, 1) * readSpeed + startFrame  # video frames to read
     # filename = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/IMG_411%01d.JPG'
