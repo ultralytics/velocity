@@ -6,13 +6,10 @@ import bokeh.palettes as bkpalettes
 from bokeh.layouts import row, column, widgetbox
 
 
-# import matplotlib.pyplot as plt
-
-
-def plot1image(cam, im, P):
+def plotresults(cam, im, P, bbox):
     # Bokeh Plotting
     bkio.reset_output()
-    bkio.output_file('bokeh plots.html', title='image plots')
+    bkio.output_file('bokeh plots.html', title='bokeh plots')
     h, w = im.shape
     n = P.shape[2]
     colors = bokeh_colors(n)
@@ -49,13 +46,18 @@ def plot1image(cam, im, P):
     # Plot clear rectangle
     p.quad(top=[h], bottom=[0], left=[0], right=[w], alpha=0)  # clear rectange hack for tooltip image x,y
 
+    # Plog bounding box
+    p.quad(top=bbox[1] + bbox[3], bottom=bbox[1], left=bbox[0], right=bbox[0] + bbox[2], color=colors[1], line_width=2,
+           alpha=.3)  # clear rectange hack for tooltip image x,y
+
     # Plot license plate outline
     p.patch(x[0:4, 0], y[0:4, 0], alpha=0.3, line_width=4)
 
     # Plot points
     # p.circle(P[0,].ravel(), P[1,].ravel(), color='blue', legend='KLT Points')
     for i in np.arange(P.shape[2]):
-        p.circle(x[:, i], y[:, i], color=colors[i], legend='image ' + str(i))
+        p.circle(x[:, i], y[:, i], color=colors[i], legend='image ' + str(i), line_width=2)
+        p.circle(P[3, :, i], P[4, :, i], color=colors[i], legend='image ' + str(i), size=12, alpha=.3)
 
     # Plot lines
     p.multi_line(x.tolist(), y.tolist(), color='white', alpha=.8, line_width=1)

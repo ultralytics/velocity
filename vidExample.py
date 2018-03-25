@@ -1,9 +1,10 @@
 from functions.fcns import *  # local functions
 from functions.plots import *  # local plots
+import scipy.io
 import time
 import imutils
 import numpy as np
-import cv2  # pip install opencv-python
+import cv2  # pip install opencv-python, pip install opencv-contrib-python
 
 isVideo = True
 pathname = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/'
@@ -16,7 +17,6 @@ if isVideo:
     # filename = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/IMG_411%01d.JPG'
     cam, cap = getCameraParams(filename, platform='iPhone 6s')
     print('Starting image processing on ' + filename + ' ...')
-
     q = np.array([[3761.4, 1503],
                   [3816.3, 1634.4],
                   [3513.3, 1699.6],
@@ -31,12 +31,17 @@ else:
         imagename.append(pathname + 'IMG_' + str(i) + '.JPG')
     filename = imagename[0]
     print('Starting image processing on ' + imagename[0] + ' through ' + imagename[-1] + ' ...')
-    cam = getCameraParams(filename, platform='iPhone 6s')
+    cam, cap_unused = getCameraParams(filename, platform='iPhone 6s')
+    q = np.array([[3761.4, 1503],
+                  [3816.3, 1634.4],
+                  [3513.3, 1699.6],
+                  [3465.7, 1559.1]]).astype('float32')
 
 # Define camera and car information matrices
+K = cam['IntrinsicMatrix']
 A = np.zeros([n, 14])  # [xyz, rpy, xyz_ecef, lla, t, number](nx14) camera information
 B = np.zeros([n, 14])  # [xyz, rpy, xyz_ecef, lla, t, number](nx14) car information
-P = np.empty([3, 104, n])  # KLT [x y valid]
+P = np.empty([5, 204, n])  # KLT [x y valid]
 P[:] = np.nan
 vg = np.zeros_like(P[2, :, 0]) == 1
 
@@ -73,63 +78,89 @@ for i in range(0, n):
         A[i, 12] -= t0
     if not success:
         break
-    scale = 2
-    im = imutils.resize(im, width=(1920 * scale))
+    scale = 1
+    im = imutils.resize(im, width=(3840 * scale))
 
     # KLT tracking
     if i == 0:
         # params for ShiTomasi corner detection
-        feature_params = dict(maxCorners=100, qualityLevel=0.2, minDistance=10, blockSize=17)
+        feature_params = dict(maxCorners=200, qualityLevel=0.1, minDistance=2, blockSize=15)
 
         # Parameters for lucas kanade optical flow
-        lk_params = dict(winSize=(15, 15), maxLevel=10,
-                         criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
-        # mask = np.zeros_like(im)
-        # mask[720 * scale:880 * scale, 1700 * scale:2000 * scale] = 1
-        # p = cv2.goodFeaturesToTrack(im, mask=mask, **feature_params).squeeze()
+        lk_params = dict(winSize=(15, 15), maxLevel=11,
+                         criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01))
 
-        p2 = cv2.goodFeaturesToTrack(im[720 * scale:880 * scale, 1700 * scale:2000 * scale], mask=None,
-                                     **feature_params).squeeze()
-        p2[:, 0] += 1700 * scale
-        p2[:, 1] += 720 * scale
-        p = p2
+        q *= scale
+        bbox = cv2.boundingRect(q)  # [x0 y0 width height]
+        roi = im[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2]]
+        p = cv2.goodFeaturesToTrack(roi, mask=None, useHarrisDetector=True, **feature_params).squeeze()
 
-        p = np.concatenate((q * scale / 2, p), axis=0)
+        # #cvb = cv2.BRISK.create()#thresh=40, octaves=4)
+        # #bp = cvb.detect(roi)
+        # surf = cv2.xfeatures2d.SURF_create(400)
+        # bp = surf.detect(roi, None)
+        # nbp=len(bp)
+        # p = np.zeros([nbp,2],dtype='float32')
+        # for j in np.arange(nbp):
+        #     p[j,:] = bp[j].pt
+
+        p[:, 0] += bbox[0]
+        p[:, 1] += bbox[1]
+
+        mat = scipy.io.loadmat('/Users/glennjocher/Documents/PyCharmProjects/Velocity/data/pc7.mat')
+        p = mat['pc']
+
+        p = np.concatenate((q, p), axis=0)
         vi = np.ones(p.shape[0])  # valid points in image i
         vg[0:vi.size] = True  # P[3,] valid points globally
 
+        t, R, residuals, p_ = estimatePlatePosition(K, p[0:4, :], worldPointsLicensePlate(), im)
+        p_w = image2world(K, R, t, p)
+
         # initialize
-        err = 0
+        fbe = 0  # forward-backward error
         dt = 0
         imfirst = im
+        dr = 0
+        r = 0
+        speed = 0
+        t, R, residuals, p_ = estimatePlatePosition(K, p, p_w, im)
     else:
         # update
-        p, vi, err = cv2.calcOpticalFlowPyrLK(im0, im, p0, None, **lk_params)
+        p, vi, fbe = KLTwarp(im, im0, p, p0, **lk_params)
+
+        # Get plate position
+        t, R, residuals, p_ = estimatePlatePosition(K, p, p_w, im)
+
         p = p[vi.ravel() == 1]
+        p_ = p_[vi.ravel() == 1]
+        p_w = p_w[vi.ravel() == 1]
         vg[vg] = vi.ravel()
         dt = A[i, 12] - A[i - 1, 12]
+        dr = np.linalg.norm(t - B[i - 1, 0:3])
+        r += dr
+        speed = dr / dt * 3.6  # m/s to km/h
 
     # Print image[i] results
     proc_dt[i] = time.time() - tic
-    print('%13g%13.3f%13g%13.1f%13.3f%13.3f%13.2f%13.2f%13.1f' %
-          (frames[i], proc_dt[i], p.shape[0], np.mean(err), dt, A[i, 12], 0, 0, 0))
+    print('%13g%13.3f%13g%13.3f%13.3f%13.3f%13.2f%13.2f%13.1f' %
+          (frames[i], proc_dt[i], p.shape[0], np.mean(residuals), dt, A[i, 12], dr, r, speed))
 
-    p0 = p
-    im0 = im
+    B[i, 0:3] = t  # car xyz
     P[0, vg, i] = p[:, 0]  # x
     P[1, vg, i] = p[:, 1]  # y
     P[2, :, i] = vg  # status
-
-    # Plot 1
-    if i == n - 1:
-        plot1image(cam, im // 2 + imfirst // 2, P)  # // is integer division
+    P[3, vg, i] = p_[:, 0]  # x
+    P[4, vg, i] = p_[:, 1]  # y
+    im0 = im
+    p0 = p
 
 if isVideo:
     # cv2.destroyAllWindows()  # Closes all cv2 frames
     cap.release()  # Release the video capture object
 
 # Plot All
-# plotimageSequence()
+plotresults(cam, im // 2 + imfirst // 2, P, bbox=bbox)  # // is integer division
 
 dta = time.time() - proc_tstart
 print('\nProcessed ', n, ' images: ', frames[:], '\nElapsed Time: ', round(dta, 3), 's (', round(n / dta, 2), ' FPS), ',

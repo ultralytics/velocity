@@ -2,12 +2,12 @@ import math
 from scipy import interpolate
 import cv2
 import numpy as np
-# import pandas as pd
 import exifread
 
 # Set options
 # pd.set_option('display.width', desired_width)
-np.set_printoptions(linewidth=320, formatter={'float_kind': '{:5.8g}'.format})  # , precision=3, suppress=True)
+# np.set_printoptions(linewidth=320, formatter={'float_kind': '{:11.5g}'.format})  # format short g, or try %precision=5
+np.set_printoptions(linewidth=320, formatter={'float_kind': '{:21.15g}'.format})  # format short g, or try %precision=5
 
 
 # %precision '%0.8g'
@@ -23,7 +23,7 @@ def worldPointsLicensePlate():
     return np.array([[x, -y],
                      [x, y],
                      [-x, y],
-                     [-x, -y]])  # worldPoints
+                     [-x, -y]], dtype='float32')  # worldPoints
 
 
 def cam2NED():
@@ -134,9 +134,9 @@ def getCameraParams(fullfilename, platform='iPhone 6s'):
 
     radialDistortion = [0, 0, 0]
     principalPoint = np.array([width, height]) / 2 + 0.5
-    IntrinsicMatrix = np.matrix([[focalLength_pix[0], 0, 0],
-                                 [skew, focalLength_pix[1], 0],
-                                 [principalPoint[0], principalPoint[1], 1]])
+    IntrinsicMatrix = np.array([[focalLength_pix[0], 0, 0],
+                                [skew, focalLength_pix[1], 0],
+                                [principalPoint[0], principalPoint[1], 1]])
 
     if width > height:  # 1 = landscape, 6 = vertical
         orientation = 1
@@ -228,25 +228,159 @@ def fcnimwarp(I, ixy, tform):
     return J
 
 
-def KLTwarp(KLT, Ixy, I, Im1, pm1, vm1, mode):
-    # # Create a mask image for drawing purposes
-    # mask = np.zeros_like(old_frame)
-    # while (1):
-    #     ret, frame = cap.read()
-    #     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    #
-    #     # calculate optical flow
-    #     p, st, err = cv2.calcOpticalFlowPyrLK(old_gray, frame_gray, p, None, **lk_params)
-    #
-    #     # Select good points
-    #     good_new = p[st == 1]
-    #     good_old = p[st == 1]
-    #
-    #     # Now update the previous frame and previous points
-    #     old_gray = frame_gray.copy()
-    #     p = good_new.reshape(-1, 1, 2)
+def KLTwarp(im, im0, p, p0, **lk_params):
+    fbe = 0
+    p, vi, err = cv2.calcOpticalFlowPyrLK(im0, im, p0, None, **lk_params)
+    # p_, vi_, err_ = cv2.calcOpticalFlowPyrLK(im, im0, p, None, **lk_params)
+    # fbe = abs(p0 - p_)
+    # fbe = fbe.max(1)
+    # vi = fbe < 0.5  # maximum forward-backward error (in pixels)
 
-    return None
+    return p, vi, fbe
+
+
+def estimatePlatePosition(K, p_im, p_w, im):
+    # Linear solution
+    R, t = extrinsicsPlanar(p_im, p_w, K)
+
+    # Nonlinear Least Squares
+    x0 = np.r_[DCM2RPY(R), t]
+    p_w3 = np.c_[p_w, np.zeros(p_w.shape[0])]
+    R, t = fcnNLScamera2world(K, p_im, p_w3, x0)
+
+    # Residuals
+    p_im_projected = world2image(K, R, t, p_w3)
+    residuals = np.sqrt(np.sum(np.square((p_im_projected - p_im)), 1))
+    return t, R, residuals, p_im_projected
+
+
+def image2world(K, R, t, p):
+    # Copy of MATLAB function pointsToworld
+    tform = np.stack((R[0, :], R[1, :], t), axis=0) @ K
+    p3 = np.c_[p, np.ones(p.shape[0])]
+    p_w = p3 @ np.linalg.inv(tform)
+    return p_w[:, 0:2] / p_w[:, 2:3]
+
+
+def world2image(K, R, t, p_w):
+    # Copy of MATLAB function worldToImage
+    camera_matrix = np.r_[R, t[None]] @ K
+    p4 = np.c_[p_w, np.ones(p_w.shape[0])]
+    p = p4 @ camera_matrix
+    return p[:, 0:2] / p[:, 2:3]
+
+
+def extrinsicsPlanar(imagePoints, worldPoints, intrinsics):
+    # Copy of MATLAB function by same name
+    # s[uv1]' = cam_intrinsics * [R t] * [xyz1]'
+
+    # Compute homography.
+    # H = fitgeotrans(worldPoints, imagePoints, 'projective')
+    H, inliers = cv2.findHomography(worldPoints, imagePoints, method=0)  # methods = 0, RANSAC = 8, LMEDS, RHO
+    h1 = H[:, 0]
+    h2 = H[:, 1]
+    h3 = H[:, 2]
+
+    A = intrinsics.T
+    lambda_ = 1 / np.linalg.norm(np.linalg.solve(A, h1))  # 1 / norm(A \ h1) in MATLAB
+
+    # Compute rotation
+    r1 = np.linalg.solve(A, lambda_ * h1)
+    r2 = np.linalg.solve(A, lambda_ * h2)
+    r3 = np.cross(r1, r2)
+    R = np.stack((r1, r2, r3), axis=0)
+
+    # R may not be a true rotation matrix because of noise in the data.
+    # Find the best rotation matrix to approximate R using SVD.
+    U, _, V = np.linalg.svd(R)
+    R = U @ V
+
+    # Compute translation vector
+    T = np.linalg.solve(A, lambda_ * h3)
+    return R, T
+
+
+def fcnNLScamera2world(K, p, p_w, x0):
+    # K = 3x3 intrinsic matrix
+    # p = nx2 image points
+    # p_w = nx3 world points
+    def fzhat(x, worldPoints, cam_matrix, n):
+        zhat = np.concatenate((worldPoints @ RPY2DCM(x[0:3]) + x[3:6], n), axis=1) @ cam_matrix
+        zhat = zhat[:, 0:2] / zhat[:, 2:3]
+        return zhat.ravel('F')
+
+    R = np.eye(3)
+    t = np.zeros([1, 3])
+    cam_matrix = np.r_[R, t] @ K
+
+    # https://la.mathworks.com/help/vision/ref/cameramatrix.html
+    # Using the camera matrix and homogeneous coordinates, you can project a world point onto the image.
+    # w * [x,y,1] = [X,Y,Z,1] * camMatrix
+    # (X,Y,Z): world coordinates of a point
+    # (x,y): coordinates of the corresponding image point
+    # w: arbitrary scale factor
+
+    # x = 6 x 1 for 6 parameters
+    # J = n x 6
+    # z = n x 1 for n measurements
+
+    dx = 1E-6  # for numerical derivatives
+    dx1 = np.array([dx, 0, 0, 0, 0, 0])
+    dx2 = np.array([0, dx, 0, 0, 0, 0])
+    dx3 = np.array([0, 0, dx, 0, 0, 0])
+    dx4 = np.array([0, 0, 0, dx, 0, 0])
+    dx5 = np.array([0, 0, 0, 0, dx, 0])
+    dx6 = np.array([0, 0, 0, 0, 0, dx])
+
+    n = np.ones([p_w.shape[0], 1])
+    x = np.r_[0, 0, 0, x0[3:6]]  # nx=numel(x)
+    z = p.ravel('F').astype('float64')  # nz=numel(z)
+    max_iter = 300
+    damping = .3
+    for i in np.arange(max_iter):
+        zhat = fzhat(x, p_w, cam_matrix, n)
+        J = np.c_[fzhat(x + dx1, p_w, cam_matrix, n),
+                  fzhat(x + dx2, p_w, cam_matrix, n),
+                  fzhat(x + dx3, p_w, cam_matrix, n),
+                  fzhat(x + dx4, p_w, cam_matrix, n),
+                  fzhat(x + dx5, p_w, cam_matrix, n),
+                  fzhat(x + dx6, p_w, cam_matrix, n)]
+        J = (J - zhat[np.newaxis].T) / dx
+        delta = np.linalg.inv(J.T @ J) @ J.T @ (z - zhat) * damping
+        x = x + delta
+        delta_rms = np.sqrt(np.mean(delta ** 2))
+        if delta_rms < 1E-9:
+            break
+    if i == (max_iter - 1):
+        print('WARNING: fcnNLScamera2world() reaching max iterations!')
+    R = RPY2DCM(x[0:3])
+    t = x[3:6]
+    fx = np.mean(np.square(z - zhat))
+    return R, t
+
+
+def RPY2DCM(rpy):
+    sr = math.sin(rpy[0])
+    sp = math.sin(rpy[1])
+    sy = math.sin(rpy[2])
+    cr = math.cos(rpy[0])
+    cp = math.cos(rpy[1])
+    cy = math.cos(rpy[2])
+    return np.array([[cp * cy, sr * sp * cy - cr * sy, cr * sp * cy + sr * sy],
+                     [cp * sy, sr * sp * sy + cr * cy, cr * sp * sy - sr * cy],
+                     [- sp, sr * cp, cr * cp]])
+
+
+def DCM2RPY(DCM):
+    # phi = atan(DCM(2,3)/DCM(3,3))
+    # theta = asin(-DCM(1,3));
+    # psi = atan2(DCM(1,2),DCM(1,1))
+    # rpy = [phi theta psi]
+    rpy = np.zeros(3)
+    rpy[0] = math.atan(DCM[2, 1] / DCM[2, 2])
+    rpy[1] = math.asin(-DCM[2, 0])
+    rpy[2] = math.atan2(DCM[1, 0], DCM[0, 0])
+    return rpy
 
 
 def make_rand_photons(photonsum):
@@ -290,7 +424,7 @@ def make_rand_photons(photonsum):
 # x90 = warp(x, tform.inverse, order=1)
 # x90 - np.rot90(x)
 #
-# imagename = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/IMG_4124.JPG';
+# imagename = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/IMG_4124.JPG'
 # im = cv2.imread(imagename, 0)
 #
 # tform23 = np.array([[0.95719, 0.010894],
