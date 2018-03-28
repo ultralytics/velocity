@@ -2,8 +2,9 @@
 def vidExamplefcn():
     import time
     from fcns import np, cv2, getCameraParams, worldPointsLicensePlate, importEXIF, fcnEXIF2LLAT, \
-        estimatePlatePosition, image2world, KLTwarp, norm3  # local functions
+        estimatePlatePosition, image2world, KLTwarp, norm3, cam2ned  # local functions
     import scipy.io
+    import plots
 
     isVideo = True
     pathname = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/'
@@ -42,8 +43,8 @@ def vidExamplefcn():
 
     # Iterate over images
     proc_dt = np.zeros([n, 1])
-    print(('\n' + '%13s' * 9) * 2 % ('image', 'procTime', 'pointTracks', 'metric', 'dt', 'time', 'dx', 'range', 'speed',
-                                     '#', '(s)', '#', '(pixels)', '(s)', '(s)', '(m)', '(m)', '(km/h)'))
+    print(('\n' + '%13s' * 9) * 2 % ('image', 'procTime', 'pointTracks', 'metric', 'dt', 'time', 'dx', 'distance',
+                                     'speed', '#', '(s)', '#', '(pixels)', '(s)', '(s)', '(m)', '(m)', '(km/h)'))
     for i in range(0, n):
         tic = time.time()
 
@@ -95,8 +96,8 @@ def vidExamplefcn():
             p[:, 0] += bbox[0]
             p[:, 1] += bbox[1]
 
-            # mat = scipy.io.loadmat('/Users/glennjocher/Documents/PyCharmProjects/Velocity/data/pc_v7.mat')
-            # p = mat['pc']
+            mat = scipy.io.loadmat('/Users/glennjocher/Documents/PyCharmProjects/Velocity/data/pc_v7.mat')
+            p = mat['pc']
 
             p = np.concatenate((q, p), axis=0)
             lenp = p.shape[0]
@@ -108,12 +109,14 @@ def vidExamplefcn():
 
             t, R, residuals, p_ = estimatePlatePosition(K, p[0:4, :], worldPointsLicensePlate())
             p_w = image2world(K, R, t, p)
-            p_ = p
+
+            # p_ = p
+            t, R, residuals, p_ = estimatePlatePosition(K, p, p_w)
 
             # initialize
             fbe = 0  # forward-backward error
-            dt = 0
             imfirst = im
+            dt = 0
             dr = 0
             speed = 0
             r = 0
@@ -129,8 +132,7 @@ def vidExamplefcn():
             p_ = p_[vi]
             p_w = p_w[vi]
             dt = A[i, 12] - A[i - 1, 12]
-            dr = norm3(t - B[i - 1, 0:3])
-
+            dr = norm3(cam2ned() @ t - B[i - 1, 0:3])
             r += dr
             speed = dr / dt * 3.6  # m/s to km/h
 
@@ -138,28 +140,23 @@ def vidExamplefcn():
         proc_dt[i] = time.time() - tic
         mr = residuals.sum() / residuals.size
         S[i, :] = (frames[i], proc_dt[i], p.shape[0], mr, dt, A[i, 12], dr, r, speed)
-        print('%13g%13.3f%13g%13.3f%13.3f%13.3f%13.2f%13.2f%13.1f' % tuple(S[i, :]))
+        print('%13g%13.3f%13g%13.3f%13.3f%13.3f%13.2f%13.2f%13.3f' % tuple(S[i, :]))
 
-        B[i, 0:3] = t  # car xyz
+        B[i, 0:3] = cam2ned() @ t  # car xyz
         P[0, vg, i] = p[:, 0]  # x
         P[1, vg, i] = p[:, 1]  # y
-        P[2, vg, i] = p_[:, 0]  # x
-        P[3, vg, i] = p_[:, 1]  # y
+        P[2, vg, i] = p_[:, 0]  # x_proj
+        P[3, vg, i] = p_[:, 1]  # y_proj
         im0 = im
         p0 = p
-
     if isVideo:
-        # cv2.destroyAllWindows()  # Closes all cv2 frames
         cap.release()  # Release the video capture object
 
-    # Plot All
-    from plots import plotresults
-    plotresults(cam, np.flip(im // 2 + imfirst // 2, 0), P, S, bbox=bbox)  # // is integer division
-
     dta = time.time() - proc_tstart
-    print('\nProcessed ', n, ' images: ', frames[:], '\nElapsed Time: ', round(dta, 3), 's (', round(n / dta, 2),
-          ' FPS), ',
-          round(dta / n, 3), 's per image\n\n')
+    print('\nSpeed = %.2f +/- %.2f km/h' % (S[1:-1, 8].mean(), S[1:-1, 8].std()))
+    print('Residuals = %.3f +/- %.3f pixels' % (S[1:-1, 3].mean(), S[1:-1, 3].std()))
+    print('Processed %g images: %s in %.2fs (%.2ffps)\n' % (n, frames[:], dta, n / dta))
+    plots.plotresults(cam, im // 2 + imfirst // 2, P, S, B, bbox=bbox)  # // is integer division
 
 
 vidExamplefcn()

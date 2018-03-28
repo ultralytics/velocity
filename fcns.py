@@ -14,6 +14,17 @@ np.set_printoptions(linewidth=320, formatter={'float_kind': '{:11.5g}'.format}) 
 
 
 # %precision '%0.8g'
+
+def norm_cols(x):
+    n = x.shape[1]
+    if n == 3:
+        return (x[:, 0] ** 2 + x[:, 1] ** 2 + x[:, 2] ** 2) ** 0.5
+    elif n == 2:
+        return (x[:, 0] ** 2 + x[:, 1] ** 2) ** 0.5
+    else:
+        return (x ** 2).sum(axis=1) ** 0.5
+
+
 def norm3(x):
     return math.sqrt(x[0] ** 2 + x[1] ** 2 + x[2] ** 2)
 
@@ -32,7 +43,7 @@ def worldPointsLicensePlate():
                      [-x, -y]], dtype='float32')  # worldPoints
 
 
-def cam2NED():
+def cam2ned():
     # x_ned(3x5) = R * x_cam(3x5)   - EQUALS -   x_ned(5x3) = x_cam(5x3) * R'
     # +X_ned(NORTH) = +Z_cam(NORTH)
     # +Y_ned(EAST)  = +X_cam(EAST)
@@ -221,74 +232,71 @@ def printd(dictionary):  # print dictionary
         print('%40s: %s' % (tag, dictionary[tag]))
 
 
-def fcnimwarp(I, ixy, tform):
-    # warps input image I into output image J according to 3x3 tform and nx3 flattened meshgrid indices ixy
-    p = ixy * tform
-    pz = p[:, 2]
-    py = np.asarray(p[:, 1] / pz)
-    px = np.asarray(p[:, 0] / pz)
-    # px = ixy*tform[:,0]
-    # py = ixy*tform[:,1]  # faster than p=Ixy*tform if no normalization needed (affine only)
+def KLTregional(im0, im, p0, T, lk_param, fbt=1.0):
+    T = T[:, 0:2].astype('float32')
+    # 1. Warp current image to past image frame
+    # im_warped_0 = cv2.warpAffine(im, T23, (int(im.shape[1]/2), int(im.shape[0]/2)),flags=cv2.WARP_INVERSE_MAP)
+    [x0, y0] = p0.min(0) - 50
+    [x1, y1] = p0.max(0) + 50
+    x0 = max(x0, 1).__int__()
+    y0 = max(y0, 1).__int__()
+    x1 = min(x1, im.shape[1]).__int__()
+    y1 = min(y1, im.shape[0]).__int__()
+    im0_roi = im0[y0:y1, x0:x1]
+    xy0 = np.float32([x0, y0])
+    p0_roi = p0 - xy0
 
-    px = px.ravel()
-    py = py.ravel()
-    xa = np.arange(I.shape[0])
-    ya = np.arange(I.shape[1])
-    f1 = interpolate.RectBivariateSpline(xa, ya, I)
-    J = f1(px, py, dx=1, dy=1, grid=False)
+    x, y = np.meshgrid(np.arange(x0, x1), np.arange(y0, y1))
+    ixy = np.ones([x.size, 3], np.float32)
+    ixy[:, 0] = x.ravel()
+    ixy[:, 1] = y.ravel()
+    ixy_ = ixy @ T
+    x_ = ixy_[:, 0].reshape(x.shape)
+    y_ = ixy_[:, 1].reshape(x.shape)
 
-    if I.size == J.size:  # reshape
-        J = J.reshape(I.shape)
-    return J
+    # x__, y__ = cv2.convertMaps(x_,y_,cv2.CV_32FC2)
+    im_warped_0 = cv2.remap(im, x_, y_, cv2.INTER_LINEAR)  # current image ROI mapped to previous image
+    pa, via, _ = cv2.calcOpticalFlowPyrLK(im0_roi, im_warped_0, p0_roi, None, **lk_param)
+    pb, vib, _ = cv2.calcOpticalFlowPyrLK(im_warped_0, im0_roi, pa, None, **lk_param)
+    fbe = norm_cols(pb - p0_roi)
+    vi = (via.ravel() == 1) & (vib.ravel() == 1) & (fbe < fbt)  # forward-backward error threshold
 
+    # convert p back to im coordinates
+    p = np.ones([pa.shape[0], 3], np.float32)
+    p[:, 0:2] = pa + xy0
+    p = p @ T
 
-def KLTregional(im0, im, p0, T, lk_param):
-    im_warped = cv2.warpAffine(im, T, (im.shape[1], im.shape[0]))
-
-    p, vi, _ = cv2.calcOpticalFlowPyrLK(im0, im, p0, None, **lk_param)
-    return p, vi
+    # import plots
+    # plots.imshow(im_warped_0, im0_roi)
+    return p, vi, fbe
 
 
 def KLTwarp(im, im0, p0):
     # Parameters for lucas kanade optical flow
     EPS = cv2.TERM_CRITERIA_EPS
     COUNT = cv2.TERM_CRITERIA_COUNT
-    lk_coarse = dict(winSize=(15, 15), maxLevel=11, criteria=(EPS | COUNT, 30, 0.01))
-    lk_fine = dict(winSize=(49, 49), maxLevel=1, criteria=(EPS | COUNT, 50, 0.01))
+    lk_coarse = dict(winSize=(15, 15), maxLevel=11, criteria=(EPS | COUNT, 20, 0.01))
+    lk_fine = dict(winSize=(51, 51), maxLevel=1, criteria=(EPS | COUNT, 40, 0.001))
 
     # 1. Coarse tracking on full image
     p, vi, _ = cv2.calcOpticalFlowPyrLK(im0, im, p0, None, **lk_coarse)
+    vi = vi.ravel() == 1
 
-    # # 2. Coarse tracking on reduced, translated regions
-    # # https://www.mathworks.com/discovery/affine-transformation.html
-    # T = np.eye(3)
-    # T[2, 0:2] = (p[vi, :] - p0[vi, :]).sum(axis=0) / vi.sum()
-    # p, vi = KLTregional(im0, im, p0, T, lk_coarse)
-    # if vi.sum() < 10:
-    #     print('TWO FRAMES ARE TOO FAR APART. MATCH SURF POINTS FROM THE GROUND UP')
-    #     # SURF POINT MATCHING FUNCTION HERE !!!
-    #
-    # # 3. Fine tracking on affine-transformed regions
-    # T23 = cv2.estimateRigidTransform(p0, p, fullAffine=True)
-    # # T23 = cv2.estimateAffine2D(p0,p)  # 2x3
-    # T = np.eye(3)
-    # T[:, 0:2] = T23.T  # convert to 3x3 affine
-    # p, vi = KLTregional(im0, im, p0, T, lk_fine)
+    # 2. Coarse tracking on reduced, translated region https://www.mathworks.com/discovery/affine-transformation.html
+    T = np.eye(3, 2)
+    T[2,] = (p[vi, :] - p0[vi, :]).mean(0)  # translation-only transform
+    p, vi, _ = KLTregional(im0, im, p0, T, lk_coarse, fbt=0.5)
 
-    fbe = 0
-    # p, vi, _ = cv2.calcOpticalFlowPyrLK(im0, im, p0, None, **lk_coarse)
-    # p_, vi_, _ = cv2.calcOpticalFlowPyrLK(im, im0, p, None, **lk_coarse)
-    # fbe = abs(p0 - p_)
-    # fbe = fbe.max(1)
-    # vi = fbe < 0.5  # maximum forward-backward error (in pixels)
+    if vi.sum() < 10:
+        print('TWO FRAMES ARE TOO FAR APART. MATCH SURF POINTS FROM THE GROUND UP')
+        # SURF POINT MATCHING FUNCTION HERE !!!
 
-    # tform33 = np.array([[0.95719, 0.010894, 0],
-    #                     [-0.035418, 0.89938, 0],
-    #                     [-105.34, 49.714, 1]]).T  # 2x3 affine tform
-    #
-    # tic=time.time(); im_warped1 = cv2.warpAffine(im, tform23, (im.shape[1], im.shape[0])); print(time.time()-tic)
+    # 3. Fine tracking on affine-transformed regions
+    # T23 = cv2.estimateRigidTransform(p0[vi, :], p[vi, :], fullAffine=True)
+    T23, inliers = cv2.estimateAffine2D(p0, p, method=cv2.RANSAC)  # 2x3
+    p, vi, fbe = KLTregional(im0, im, p0, T23.T, lk_fine, fbt=0.1)
 
-    return p, vi.ravel() == 1, fbe
+    return p, vi, fbe
 
 
 def estimatePlatePosition(K, p_im, p_w):
@@ -343,7 +351,7 @@ def extrinsicsPlanar(imagePoints, worldPoints, K):
     lambda_ = 1 / norm3(b)  # lambda_ = 1 / norm(A \ h1) in MATLAB
 
     # Compute rotation
-    r1 = np.linalg.solve(A, lambda_ * h1)
+    r1 = b * lambda_  # r1 = np.linalg.solve(A, lambda_ * h1)
     r2 = np.linalg.solve(A, lambda_ * h2)
     # r1 = Ainv @ (lambda_ * h1[:, None]).ravel()
     # r2 = Ainv @ (lambda_ * h2[:, None]).ravel()
