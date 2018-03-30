@@ -8,11 +8,7 @@ import numpy as np
 # Set options
 # pd.set_option('display.width', desired_width)
 np.set_printoptions(linewidth=320, formatter={'float_kind': '{:11.5g}'.format})  # format short g, %precision=5
-
-
 # np.set_printoptions(linewidth=320, formatter={'float_kind': '{:21.15g}'.format})  # format long g, %precision=15
-
-
 # %precision '%0.8g'
 
 def norm_cols(x):
@@ -109,7 +105,7 @@ def getCameraParams(fullfilename, platform='iPhone 6s'):
     # fullfilename: video or image(s) file name(s) i.e. mymovie.mov or IMG_3797.jpg
     # platform: camera name i.e. 'iPhone 6s'
     pathname, filename, extension = filenamesplit(fullfilename)
-    isvideo = (extension == '.MOV') | (extension == '.mov')
+    isvideo = (extension == '.MOV') | (extension == '.mov') | (extension == '.m4v')
 
     if platform == 'iPhone 6s':
         # pixelSize = 0.0011905 #(mm) on a side, 12um
@@ -232,8 +228,9 @@ def printd(dictionary):  # print dictionary
         print('%40s: %s' % (tag, dictionary[tag]))
 
 
-def KLTregional(im0, im, p0, T, lk_param, fbt=1.0):
-    T = T[:, 0:2].astype('float32')
+# @profile
+def KLTregional(im0, im, p0, T, lk_param, fbt=1.0, translateFlag=False):
+    T = T.astype('float32')
     # 1. Warp current image to past image frame
     # im_warped_0 = cv2.warpAffine(im, T23, (int(im.shape[1]/2), int(im.shape[0]/2)),flags=cv2.WARP_INVERSE_MAP)
     [x0, y0] = p0.min(0) - 50
@@ -246,60 +243,71 @@ def KLTregional(im0, im, p0, T, lk_param, fbt=1.0):
     xy0 = np.float32([x0, y0])
     p0_roi = p0 - xy0
 
-    x, y = np.meshgrid(np.arange(x0, x1), np.arange(y0, y1))
-    ixy = np.ones([x.size, 3], np.float32)
-    ixy[:, 0] = x.ravel()
-    ixy[:, 1] = y.ravel()
-    ixy_ = ixy @ T
-    x_ = ixy_[:, 0].reshape(x.shape)
-    y_ = ixy_[:, 1].reshape(x.shape)
+    if translateFlag:
+        dx = T[2, 0].__int__()
+        dy = T[2, 1].__int__()
+        im_warped_0 = im[y0 + dy:y1 + dy, x0 + dx:x1 + dx]
+    else:
+        x, y = np.meshgrid(np.arange(x0, x1), np.arange(y0, y1))
+        ixy = np.ones([x.size, 3], np.float32)
+        ixy[:, 0] = x.ravel()
+        ixy[:, 1] = y.ravel()
+        ixy_ = ixy @ T
+        x_ = ixy_[:, 0].reshape(x.shape)
+        y_ = ixy_[:, 1].reshape(x.shape)
+        # x__, y__ = cv2.convertMaps(x_,y_,cv2.CV_32FC2)
+        im_warped_0 = cv2.remap(im, x_, y_, cv2.INTER_LINEAR)  # current image ROI mapped to previous image
 
-    # x__, y__ = cv2.convertMaps(x_,y_,cv2.CV_32FC2)
-    im_warped_0 = cv2.remap(im, x_, y_, cv2.INTER_LINEAR)  # current image ROI mapped to previous image
+    # run klt tracker forward-backward
     pa, via, _ = cv2.calcOpticalFlowPyrLK(im0_roi, im_warped_0, p0_roi, None, **lk_param)
     pb, vib, _ = cv2.calcOpticalFlowPyrLK(im_warped_0, im0_roi, pa, None, **lk_param)
     fbe = norm_cols(pb - p0_roi)
     vi = (via.ravel() == 1) & (vib.ravel() == 1) & (fbe < fbt)  # forward-backward error threshold
 
     # convert p back to im coordinates
-    p = np.ones([pa.shape[0], 3], np.float32)
-    p[:, 0:2] = pa + xy0
-    p = p @ T
+    if translateFlag:
+        p = pa + (xy0 + [dx, dy]).astype(np.float32)
+    else:
+        p = np.ones([pa.shape[0], 3], np.float32)
+        p[:, 0:2] = pa + xy0
+        p = p @ T
 
     # import plots
     # plots.imshow(im_warped_0, im0_roi)
     return p, vi, fbe
 
 
+# @profile
 def KLTwarp(im, im0, p0):
     # Parameters for lucas kanade optical flow
     EPS = cv2.TERM_CRITERIA_EPS
     COUNT = cv2.TERM_CRITERIA_COUNT
     lk_coarse = dict(winSize=(15, 15), maxLevel=11, criteria=(EPS | COUNT, 20, 0.01))
-    lk_fine = dict(winSize=(51, 51), maxLevel=1, criteria=(EPS | COUNT, 40, 0.001))
+    lk_fine = dict(winSize=(51, 51), maxLevel=0, criteria=(EPS | COUNT, 40, 0.001))
 
     # 1. Coarse tracking on full image
     p, vi, _ = cv2.calcOpticalFlowPyrLK(im0, im, p0, None, **lk_coarse)
     vi = vi.ravel() == 1
 
-    # # 2. Coarse tracking on reduced, translated region https://www.mathworks.com/discovery/affine-transformation.html
-    # T = np.eye(3, 2)
-    # T[2, ] = (p[vi, :] - p0[vi, :]).mean(0)  # translation-only transform
-    # p, vi, _ = KLTregional(im0, im, p0, T, lk_coarse, fbt=0.5)
-    #
-    # if vi.sum() < 10:
-    #     print('TWO FRAMES ARE TOO FAR APART. MATCH SURF POINTS FROM THE GROUND UP')
-    #     # SURF POINT MATCHING FUNCTION HERE !!!
-    #
-    # # 3. Fine tracking on affine-transformed regions
-    # # T23 = cv2.estimateRigidTransform(p0[vi, :], p[vi, :], fullAffine=True)
-    # T23, inliers = cv2.estimateAffine2D(p0, p, method=cv2.RANSAC)  # 2x3
-    # p, vi, fbe = KLTregional(im0, im, p0, T23.T, lk_fine, fbt=0.1)
+    # 2. Coarse tracking on reduced, translated region https://www.mathworks.com/discovery/affine-transformation.html
+    T = np.eye(3, 2)
+    T[2,] = (p[vi, :] - p0[vi, :]).mean(0)  # translation-only transform
+    p, vi, _ = KLTregional(im0, im, p0, T, lk_coarse, fbt=0.5, translateFlag=True)
+
+    if vi.sum() < 10:
+        print('TWO FRAMES ARE TOO FAR APART. MATCH SURF POINTS FROM THE GROUND UP')
+        # SURF POINT MATCHING FUNCTION HERE !!!
+
+    # 3. Fine tracking on affine-transformed regions
+    # T23 = cv2.estimateRigidTransform(p0[vi, :], p[vi, :], fullAffine=True)
+    T23, inliers = cv2.estimateAffine2D(p0, p, method=cv2.RANSAC)  # 2x3
+    p, vi, fbe = KLTregional(im0, im, p0, T23.T, lk_fine, fbt=0.1)
 
     fbe = 0
     return p, vi, fbe
 
 
+# @profile
 def estimatePlatePosition(K, p_im, p_w):
     # Linear solution
     R, t = extrinsicsPlanar(p_im, p_w, K)
@@ -334,6 +342,7 @@ def world2image(K, R, t, p_w):
     return p[:, 0:2] / p[:, 2:3]
 
 
+# @profile
 def extrinsicsPlanar(imagePoints, worldPoints, K):
     # Copy of MATLAB function by same name
     # s[uv1]' = cam_intrinsics * [R t] * [xyz1]'
@@ -404,8 +413,8 @@ def fcnNLScamera2world(K, p, p_w, x0):
     om = np.ones([n, 4])
     x = np.array([0, 0, 0, x0[3], x0[4], x0[5]])  # nx=numel(x)
     z = p.ravel().astype('float64')  # nz=numel(z)
-    max_iter = 300
-    damping = .3
+    max_iter = 100
+    damping = .7
     for i in np.arange(max_iter):
         x03 = x[0:3]
         x36 = x[3:6]
@@ -427,8 +436,10 @@ def fcnNLScamera2world(K, p, p_w, x0):
                             fzhat(a0 + b3, cam_matrix, om)), axis=0).reshape(n * 2, 6, order='F')
 
         J = (J - zhat[np.newaxis].T) / dx
-        delta = np.linalg.inv(J.T @ J) @ J.T @ (z - zhat) * damping
-        # delta = np.linalg.solve(J.T @ J, J.T) @ (z - zhat) * damping  # slower, but possibly more stable??
+        JTJ = J.T @ J
+        mdm = np.diag(np.eye(6) * damping)  # marquardt damping matrix
+        # delta = np.linalg.inv(JTJ + mdm) @ J.T @ (z - zhat)
+        delta = np.linalg.solve(JTJ + mdm, J.T) @ (z - zhat)  # slower, but possibly more stable??
         x = x + delta
         delta_rms = math.sqrt((delta ** 2).sum() / len(delta))
         if delta_rms < 1E-9:

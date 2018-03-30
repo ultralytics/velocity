@@ -1,4 +1,5 @@
 # from fcns import *
+# @profile
 def vidExamplefcn():
     import time
     from fcns import np, cv2, getCameraParams, worldPointsLicensePlate, importEXIF, fcnEXIF2LLAT, \
@@ -8,7 +9,7 @@ def vidExamplefcn():
     isVideo = True
     pathname = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/'
     if isVideo:
-        filename = pathname + 'IMG_4134.MOV'
+        filename = pathname + 'IMG_4134.m4v'
         startFrame = 19  # 0 indexed
         readSpeed = 1  # read every # frames. ref = 1 reads every frame, ref = 2 skips every other frame, etc.
         n = 10  # number of frames to read
@@ -70,7 +71,8 @@ def vidExamplefcn():
         if not success:
             break
         scale = 1
-        # im1 = cv2.resize(im, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+        if scale != 1:
+            im = cv2.resize(im, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
 
         # KLT tracking
         if i == 0:
@@ -106,8 +108,8 @@ def vidExamplefcn():
             t, R, residuals, p_ = estimatePlatePosition(K, p[0:4, :], worldPointsLicensePlate())
             p_w = image2world(K, R, t, p)
 
-            # p_ = p
-            t, R, residuals, p_ = estimatePlatePosition(K, p, p_w)
+            p_ = p
+            # t, R, residuals, p_ = estimatePlatePosition(K, p, p_w)
 
             # initialize
             fbe = 0  # forward-backward error
