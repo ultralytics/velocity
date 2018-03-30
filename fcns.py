@@ -274,7 +274,7 @@ def KLTregional(im0, im, p0, T, lk_param, fbt=1.0, translateFlag=False):
 
     # import plots
     # plots.imshow(im_warped_0, im0_roi)
-    return p, vi, fbe
+    return p, vi
 
 
 # @profile
@@ -282,40 +282,45 @@ def KLTwarp(im, im0, p0):
     # Parameters for lucas kanade optical flow
     EPS = cv2.TERM_CRITERIA_EPS
     COUNT = cv2.TERM_CRITERIA_COUNT
-    lk_coarse = dict(winSize=(15, 15), maxLevel=11, criteria=(EPS | COUNT, 20, 0.01))
-    lk_fine = dict(winSize=(51, 51), maxLevel=0, criteria=(EPS | COUNT, 40, 0.001))
+    lk_coarse = dict(winSize=(9, 9), maxLevel=5, criteria=(EPS | COUNT, 10, 0.1))
+    lk_fine = dict(winSize=(41, 41), maxLevel=0, criteria=(EPS | COUNT, 40, 0.001))
 
     # 1. Coarse tracking on full image
-    p, vi, _ = cv2.calcOpticalFlowPyrLK(im0, im, p0, None, **lk_coarse)
+    scale = 0.1
+    im_small = cv2.resize(im, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
+    im0_small = cv2.resize(im0, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
+    p, vi, _ = cv2.calcOpticalFlowPyrLK(im0_small, im_small, p0 * scale, None, **lk_coarse)
     vi = vi.ravel() == 1
+    p = p / scale
 
     # 2. Coarse tracking on reduced, translated region https://www.mathworks.com/discovery/affine-transformation.html
     T = np.eye(3, 2)
     T[2,] = (p[vi, :] - p0[vi, :]).mean(0)  # translation-only transform
-    p, vi, _ = KLTregional(im0, im, p0, T, lk_coarse, fbt=0.5, translateFlag=True)
+    p, vi = KLTregional(im0, im, p0, T, lk_coarse, fbt=0.5, translateFlag=True)
 
     if vi.sum() < 10:
         print('TWO FRAMES ARE TOO FAR APART. MATCH SURF POINTS FROM THE GROUND UP')
         # SURF POINT MATCHING FUNCTION HERE !!!
 
     # 3. Fine tracking on affine-transformed regions
-    # T23 = cv2.estimateRigidTransform(p0[vi, :], p[vi, :], fullAffine=True)
-    T23, inliers = cv2.estimateAffine2D(p0, p, method=cv2.RANSAC)  # 2x3
-    p, vi, fbe = KLTregional(im0, im, p0, T23.T, lk_fine, fbt=0.1)
+    T23 = cv2.estimateRigidTransform(p0[vi, :], p[vi, :], fullAffine=True)
+    # T23, inliers = cv2.estimateAffine2D(p0[vi, :], p[vi, :], method=cv2.RANSAC)  # 2x3
+    p, vi = KLTregional(im0, im, p0, T23.T, lk_fine, fbt=0.1)
 
-    fbe = 0
-    return p, vi, fbe
+    return p, vi
 
 
 # @profile
 def estimatePlatePosition(K, p_im, p_w):
     # Linear solution
-    R, t = extrinsicsPlanar(p_im, p_w, K)
+    # R, t = extrinsicsPlanar(p_im, p_w, K)
+    # x0 = np.concatenate([dcm2rpy(R), t])
 
     # Nonlinear Least Squares
-    x0 = np.concatenate([dcm2rpy(R), t])
     p_w3 = np.zeros([p_w.shape[0], 3])
     p_w3[:, 0:2] = p_w
+
+    x0 = [0, 0, 0, 0, 0, 1]
     R, t = fcnNLScamera2world(K, p_im, p_w3, x0)
 
     # Residuals
@@ -380,6 +385,7 @@ def extrinsicsPlanar(imagePoints, worldPoints, K):
     return R, T
 
 
+# @profile
 def fcnNLScamera2world(K, p, p_w, x0):
     # K = 3x3 intrinsic matrix
     # p = nx2 image points
@@ -390,9 +396,11 @@ def fcnNLScamera2world(K, p, p_w, x0):
         zhat = zhat[:, 0:2] / zhat[:, 2:3]
         return zhat.ravel()
 
-    R = np.eye(3)
-    t = np.zeros([1, 3])
-    cam_matrix = np.concatenate([R, t]) @ K
+    # R = np.eye(3)
+    # t = np.zeros([1, 3])
+    # cam_matrix = np.concatenate([R, t]) @ K
+    cam_matrix = np.zeros((4, 3))
+    cam_matrix[0:3, 0:3] = K  # only valid for R=eye(3) and t=zeros(1,3)
 
     # https://la.mathworks.com/help/vision/ref/cameramatrix.html
     # Using the camera matrix and homogeneous coordinates, you can project a world point onto the image.
@@ -438,8 +446,8 @@ def fcnNLScamera2world(K, p, p_w, x0):
         J = (J - zhat[np.newaxis].T) / dx
         JTJ = J.T @ J
         mdm = np.diag(np.eye(6) * damping)  # marquardt damping matrix
-        # delta = np.linalg.inv(JTJ + mdm) @ J.T @ (z - zhat)
-        delta = np.linalg.solve(JTJ + mdm, J.T) @ (z - zhat)  # slower, but possibly more stable??
+        delta = np.linalg.inv(JTJ + mdm) @ J.T @ (z - zhat)
+        # delta = np.linalg.solve(JTJ + mdm, J.T) @ (z - zhat)  # slower, but possibly more stable??
         x = x + delta
         delta_rms = math.sqrt((delta ** 2).sum() / len(delta))
         if delta_rms < 1E-9:

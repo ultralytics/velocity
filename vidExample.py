@@ -16,7 +16,7 @@ def vidExamplefcn():
         frames = np.arange(n) * readSpeed + startFrame  # video frames to read
         # filename = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/IMG_411%01d.JPG'
         cam, cap = getCameraParams(filename, platform='iPhone 6s')
-        print('Starting image processing on ' + filename + ' ...')
+        print('Starting image processing on %s ...' % filename)
     else:
         # frames = np.arange(4122,4133+1)
         # imagename = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/IMG_4124.JPG'
@@ -112,7 +112,6 @@ def vidExamplefcn():
             # t, R, residuals, p_ = estimatePlatePosition(K, p, p_w)
 
             # initialize
-            fbe = 0  # forward-backward error
             imfirst = im
             dt = 0
             dr = 0
@@ -120,7 +119,7 @@ def vidExamplefcn():
             speed = 0
         else:
             # update
-            p, vi, fbe = KLTwarp(im, im0, p0)
+            p, vi = KLTwarp(im, im0, p0)
 
             # Get plate position
             t, R, residuals, p_ = estimatePlatePosition(K, p, p_w)
@@ -133,6 +132,7 @@ def vidExamplefcn():
             dr = norm3(cam2ned() @ t - B[i - 1, 0:3])
             r += dr
             speed = dr / dt * 3.6  # m/s to km/h
+            del im0
 
         # Print image[i] results
         proc_dt[i] = time.time() - tic
@@ -154,6 +154,8 @@ def vidExamplefcn():
     print('\nSpeed = %.2f +/- %.2f km/h' % (S[1:-1, 8].mean(), S[1:-1, 8].std()))
     print('Residuals = %.3f +/- %.3f pixels' % (S[1:-1, 3].mean(), S[1:-1, 3].std()))
     print('Processed %g images: %s in %.2fs (%.2ffps)\n' % (n, frames[:], dta, n / dta))
+
+    # import plots
     # plots.plotresults(cam, im // 2 + imfirst // 2, P, S, B, bbox=bbox)  # // is integer division
 
 
