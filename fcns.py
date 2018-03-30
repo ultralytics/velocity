@@ -7,10 +7,10 @@ import numpy as np
 
 # Set options
 # pd.set_option('display.width', desired_width)
-np.set_printoptions(linewidth=320, formatter={'float_kind': '{:11.5g}'.format})  # format short g, or try %precision=5
+np.set_printoptions(linewidth=320, formatter={'float_kind': '{:11.5g}'.format})  # format short g, %precision=5
 
 
-# np.set_printoptions(linewidth=320, formatter={'float_kind': '{:21.15g}'.format})  # format short g, or try %precision=5
+# np.set_printoptions(linewidth=320, formatter={'float_kind': '{:21.15g}'.format})  # format long g, %precision=15
 
 
 # %precision '%0.8g'
@@ -282,20 +282,21 @@ def KLTwarp(im, im0, p0):
     p, vi, _ = cv2.calcOpticalFlowPyrLK(im0, im, p0, None, **lk_coarse)
     vi = vi.ravel() == 1
 
-    # 2. Coarse tracking on reduced, translated region https://www.mathworks.com/discovery/affine-transformation.html
-    T = np.eye(3, 2)
-    T[2,] = (p[vi, :] - p0[vi, :]).mean(0)  # translation-only transform
-    p, vi, _ = KLTregional(im0, im, p0, T, lk_coarse, fbt=0.5)
+    # # 2. Coarse tracking on reduced, translated region https://www.mathworks.com/discovery/affine-transformation.html
+    # T = np.eye(3, 2)
+    # T[2, ] = (p[vi, :] - p0[vi, :]).mean(0)  # translation-only transform
+    # p, vi, _ = KLTregional(im0, im, p0, T, lk_coarse, fbt=0.5)
+    #
+    # if vi.sum() < 10:
+    #     print('TWO FRAMES ARE TOO FAR APART. MATCH SURF POINTS FROM THE GROUND UP')
+    #     # SURF POINT MATCHING FUNCTION HERE !!!
+    #
+    # # 3. Fine tracking on affine-transformed regions
+    # # T23 = cv2.estimateRigidTransform(p0[vi, :], p[vi, :], fullAffine=True)
+    # T23, inliers = cv2.estimateAffine2D(p0, p, method=cv2.RANSAC)  # 2x3
+    # p, vi, fbe = KLTregional(im0, im, p0, T23.T, lk_fine, fbt=0.1)
 
-    if vi.sum() < 10:
-        print('TWO FRAMES ARE TOO FAR APART. MATCH SURF POINTS FROM THE GROUND UP')
-        # SURF POINT MATCHING FUNCTION HERE !!!
-
-    # 3. Fine tracking on affine-transformed regions
-    # T23 = cv2.estimateRigidTransform(p0[vi, :], p[vi, :], fullAffine=True)
-    T23, inliers = cv2.estimateAffine2D(p0, p, method=cv2.RANSAC)  # 2x3
-    p, vi, fbe = KLTregional(im0, im, p0, T23.T, lk_fine, fbt=0.1)
-
+    fbe = 0
     return p, vi, fbe
 
 

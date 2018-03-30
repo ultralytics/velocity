@@ -4,7 +4,6 @@ def vidExamplefcn():
     from fcns import np, cv2, getCameraParams, worldPointsLicensePlate, importEXIF, fcnEXIF2LLAT, \
         estimatePlatePosition, image2world, KLTwarp, norm3, cam2ned  # local functions
     import scipy.io
-    import plots
 
     isVideo = True
     pathname = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/'
@@ -28,15 +27,12 @@ def vidExamplefcn():
         filename = imagename[0]
         print('Starting image processing on ' + imagename[0] + ' through ' + imagename[-1] + ' ...')
         cam, cap_unused = getCameraParams(filename, platform='iPhone 6s')
+    mat = scipy.io.loadmat('/Users/glennjocher/Google Drive/MATLAB/SPEEDTRAP/IMG_4134.MOV.mat')
+    q = mat['q'].astype('float32')
 
     # Define camera and car information matrices
     proc_tstart = time.time()
     K = cam['IntrinsicMatrix']
-
-    mat = scipy.io.loadmat('/Users/glennjocher/Google Drive/MATLAB/SPEEDTRAP/IMG_4134.MOV.mat')
-    q = mat['q']
-    q = q.astype('float32')
-
     A = np.zeros([n, 14])  # [xyz, rpy, xyz_ecef, lla, t, number](nx14) camera information
     B = np.zeros([n, 14])  # [xyz, rpy, xyz_ecef, lla, t, number](nx14) car information
     S = np.empty([n, 9])  # stats
@@ -96,8 +92,8 @@ def vidExamplefcn():
             p[:, 0] += bbox[0]
             p[:, 1] += bbox[1]
 
-            mat = scipy.io.loadmat('/Users/glennjocher/Documents/PyCharmProjects/Velocity/data/pc_v7.mat')
-            p = mat['pc']
+            # mat = scipy.io.loadmat('/Users/glennjocher/Documents/PyCharmProjects/Velocity/data/pc_v7.mat')
+            # p = mat['pc']
 
             p = np.concatenate((q, p), axis=0)
             lenp = p.shape[0]
@@ -118,8 +114,8 @@ def vidExamplefcn():
             imfirst = im
             dt = 0
             dr = 0
-            speed = 0
             r = 0
+            speed = 0
         else:
             # update
             p, vi, fbe = KLTwarp(im, im0, p0)
@@ -156,7 +152,7 @@ def vidExamplefcn():
     print('\nSpeed = %.2f +/- %.2f km/h' % (S[1:-1, 8].mean(), S[1:-1, 8].std()))
     print('Residuals = %.3f +/- %.3f pixels' % (S[1:-1, 3].mean(), S[1:-1, 3].std()))
     print('Processed %g images: %s in %.2fs (%.2ffps)\n' % (n, frames[:], dta, n / dta))
-    plots.plotresults(cam, im // 2 + imfirst // 2, P, S, B, bbox=bbox)  # // is integer division
+    # plots.plotresults(cam, im // 2 + imfirst // 2, P, S, B, bbox=bbox)  # // is integer division
 
 
 vidExamplefcn()

@@ -85,15 +85,15 @@ def plotresults(cam, im, P, S, B, bbox):
     io.show(column(a, row(b, c, d)))  # open a browser
 
 
-def bokeh_colors(palettes, n):
+def bokeh_colors(bkpalettes, n):
     # https: // bokeh.pydata.org / en / latest / docs / reference / palettes.html
     # returns appropriate 10, 20 or 256 colors for plotting. n is the maximum required colors
     if n < 11:
-        return palettes.Category10[10]
+        return bkpalettes.Category10[10]
     elif n < 21:
-        return palettes.Category20[20]
+        return bkpalettes.Category20[20]
     else:
-        return palettes.Viridis256
+        return bkpalettes.Viridis256
 
 
 def imshow(im, im2=None):
