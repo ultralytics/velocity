@@ -4,7 +4,7 @@ def vidExamplefcn():
     import time
     from fcns import np, cv2, getCameraParams, worldPointsLicensePlate, importEXIF, fcnEXIF2LLAT, \
         estimatePlatePosition, image2world, KLTwarp, norm3, cam2ned  # local functions
-    import scipy.io
+    import scipy.io  # , plots
 
     isVideo = True
     pathname = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/'
@@ -17,6 +17,7 @@ def vidExamplefcn():
         # filename = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/IMG_411%01d.JPG'
         cam, cap = getCameraParams(filename, platform='iPhone 6s')
         print('Starting image processing on %s ...' % filename)
+        mat = scipy.io.loadmat('/Users/glennjocher/Google Drive/MATLAB/SPEEDTRAP/IMG_4134.MOV.mat')
     else:
         # frames = np.arange(4122,4133+1)
         # imagename = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/IMG_4124.JPG'
@@ -28,8 +29,8 @@ def vidExamplefcn():
         filename = imagename[0]
         print('Starting image processing on ' + imagename[0] + ' through ' + imagename[-1] + ' ...')
         cam, cap_unused = getCameraParams(filename, platform='iPhone 6s')
-    mat = scipy.io.loadmat('/Users/glennjocher/Google Drive/MATLAB/SPEEDTRAP/IMG_4134.MOV.mat')
-    q = mat['q'].astype('float32')
+        mat = scipy.io.loadmat('/Users/glennjocher/Google Drive/MATLAB/SPEEDTRAP/IMG_4122.JPG.mat')
+    q = mat['q'].astype(np.float32)
 
     # Define camera and car information matrices
     proc_tstart = time.time()
@@ -70,39 +71,29 @@ def vidExamplefcn():
             A[i, 12] -= t0
         if not success:
             break
+
+        # Scaling and histogram equalization
         scale = 1
         if scale != 1:
-            im = cv2.resize(im, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+            im = cv2.resize(im, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
+
+        # im = cv2.equalizeHist(im)
+        # if i==0:
+        #    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(80, 80))
+        # im = clahe.apply(im)
 
         # KLT tracking
         if i == 0:
             q *= scale
             bbox = cv2.boundingRect(q)  # [x0 y0 width height]
             roi = im[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2]]
-            p = cv2.goodFeaturesToTrack(roi, mask=None, useHarrisDetector=False,
-                                        maxCorners=200, qualityLevel=0.1, minDistance=1, blockSize=15).squeeze()
-
-            # #cvb = cv2.BRISK.create()#thresh=40, octaves=4)
-            # #bp = cvb.detect(roi)
-            # surf = cv2.xfeatures2d.SURF_create(400)
-            # bp = surf.detect(roi, None)
-            # nbp=len(bp)
-            # p = np.zeros([nbp,2],dtype='float32')
-            # for j in np.arange(nbp):
-            #     p[j,:] = bp[j].pt
-
-            p[:, 0] += bbox[0]
-            p[:, 1] += bbox[1]
-
-            # mat = scipy.io.loadmat('/Users/glennjocher/Documents/PyCharmProjects/Velocity/data/pc_v7.mat')
-            # p = mat['pc']
+            p = cv2.goodFeaturesToTrack(roi, 300, 0.01, 1, useHarrisDetector=False, ).squeeze() + np.float32(bbox[0:2])
 
             p = np.concatenate((q, p), axis=0)
-            lenp = p.shape[0]
-            vi = np.empty(lenp, dtype=bool)  # valid points in image i
+            vi = np.empty(p.shape[0], dtype=bool)  # valid points in image i
             vi[:] = True
             vg = vi  # P[3,] valid points globally
-            P = np.empty([4, lenp, n])  # KLT [x y valid]
+            P = np.empty([4, p.shape[0], n])  # KLT [x y valid]
             P[:] = np.nan
 
             t, R, residuals, p_ = estimatePlatePosition(K, p[0:4, :], worldPointsLicensePlate())
@@ -117,9 +108,10 @@ def vidExamplefcn():
             dr = 0
             r = 0
             speed = 0
+            im0_small = cv2.resize(im, (0, 0), fx=1 / 8, fy=1 / 8, interpolation=cv2.INTER_NEAREST)
         else:
             # update
-            p, vi = KLTwarp(im, im0, p0)
+            p, vi, im0_small = KLTwarp(im, im0, im0_small, p0)
 
             # Get plate position
             t, R, residuals, p_ = estimatePlatePosition(K, p, p_w)
@@ -151,12 +143,12 @@ def vidExamplefcn():
         cap.release()  # Release the video capture object
 
     dta = time.time() - proc_tstart
-    print('\nSpeed = %.2f +/- %.2f km/h' % (S[1:-1, 8].mean(), S[1:-1, 8].std()))
-    print('Residuals = %.3f +/- %.3f pixels' % (S[1:-1, 3].mean(), S[1:-1, 3].std()))
+    print('\nSpeed = %.2f +/- %.2f km/h' % (S[1:, 8].mean(), S[1:, 8].std()))
+    print('Residuals = %.3f +/- %.3f pixels' % (S[1:, 3].mean(), S[1:, 3].std()))
     print('Processed %g images: %s in %.2fs (%.2ffps)\n' % (n, frames[:], dta, n / dta))
 
-    # import plots
-    # plots.plotresults(cam, im // 2 + imfirst // 2, P, S, B, bbox=bbox)  # // is integer division
+    import plots
+    plots.plotresults(cam, im // 2 + imfirst // 2, P, S, B, bbox=bbox)  # // is integer division
 
 
 vidExamplefcn()

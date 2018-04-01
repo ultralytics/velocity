@@ -8,6 +8,8 @@ import numpy as np
 # Set options
 # pd.set_option('display.width', desired_width)
 np.set_printoptions(linewidth=320, formatter={'float_kind': '{:11.5g}'.format})  # format short g, %precision=5
+
+
 # np.set_printoptions(linewidth=320, formatter={'float_kind': '{:21.15g}'.format})  # format long g, %precision=15
 # %precision '%0.8g'
 
@@ -100,6 +102,7 @@ def filenamesplit(string):
     return path, filename, extension
 
 
+# @profile
 def getCameraParams(fullfilename, platform='iPhone 6s'):
     # returns camera parameters and file information structure cam
     # fullfilename: video or image(s) file name(s) i.e. mymovie.mov or IMG_3797.jpg
@@ -158,7 +161,7 @@ def getCameraParams(fullfilename, platform='iPhone 6s'):
     principalPoint = np.array([width, height]) / 2 + 0.5
     IntrinsicMatrix = np.array([[focalLength_pix[0], 0, 0],
                                 [skew, focalLength_pix[1], 0],
-                                [principalPoint[0], principalPoint[1], 1]])
+                                [principalPoint[0], principalPoint[1], 1]], np.float32)
 
     if orientation == 1:  # 1 = landscape, 6 = vertical
         orientation_comment = 'Horizontal'
@@ -228,6 +231,54 @@ def printd(dictionary):  # print dictionary
         print('%40s: %s' % (tag, dictionary[tag]))
 
 
+def keypoints2points(kp):
+    # inputs ORB keypoint strucutre and outputs nx2  nparray
+    nk = kp.__len__()
+    p = np.zeros([nk, 2], dtype='float32')
+    for j in np.arange(nk):
+        p[j, :] = kp[j].pt
+    return p
+
+
+# @profile
+def orb_match(im0, im1, p0):
+    scale = 1 / 2
+    im0 = cv2.resize(im0, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
+    im1 = cv2.resize(im1, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
+
+    orb = cv2.AKAZE_create()
+    # orb = cv2.xfeatures2d.SURF_create()
+    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+    # bbox = cv2.boundingRect(p0_)  # [x0 y0 width height]
+    # im0_roi = im0[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2]]
+    # mask = np.zeros_like(im0)
+    # mask[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2]] = 1
+    [x0, y0] = p0.min(0) * scale - 25
+    [x1, y1] = p0.max(0) * scale + 25
+    x0 = max(x0, 1).__int__()
+    y0 = max(y0, 1).__int__()
+    x1 = min(x1, im0.shape[1]).__int__()
+    y1 = min(y1, im0.shape[0]).__int__()
+    # im0_roi = im0[y0:y1, x0:x1]
+
+    mask = np.zeros_like(im0)
+    mask[y0:y1, x0:x1] = 1
+    kp0, des0 = orb.detectAndCompute(im0, mask=mask)
+    kp1, des1 = orb.detectAndCompute(im1, None)
+    matches = bf.match(des0, des1)
+
+    n = len(matches)
+    m0 = np.zeros((n, 2))
+    m1 = np.zeros((n, 2))
+    for j in np.arange(n):
+        i0, i1 = matches[j].queryIdx, matches[j].trainIdx
+        m0[j] = kp0[i0].pt
+        m1[j] = kp1[i1].pt
+    # m0 += bbox[0:2]
+    # plots.imshow(im0 // 2 + im1 // 2, None, m0, m1)
+    return cv2.estimateAffine2D(m0 / scale, m1 / scale, method=cv2.RANSAC)  # 2x3, better results
+
+
 # @profile
 def KLTregional(im0, im, p0, T, lk_param, fbt=1.0, translateFlag=False):
     T = T.astype('float32')
@@ -258,11 +309,21 @@ def KLTregional(im0, im, p0, T, lk_param, fbt=1.0, translateFlag=False):
         # x__, y__ = cv2.convertMaps(x_,y_,cv2.CV_32FC2)
         im_warped_0 = cv2.remap(im, x_, y_, cv2.INTER_LINEAR)  # current image ROI mapped to previous image
 
+    # clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    # im0_roi = clahe.apply(im0_roi)
+    # im_warped_0 = clahe.apply(im_warped_0)
+
+    im0_roi = cv2.equalizeHist(im0_roi)
+    im_warped_0 = cv2.equalizeHist(im_warped_0)
+
+    # _, pyr1 = cv2.buildOpticalFlowPyramid(im0_roi, winSize=lk_param['winSize'], maxLevel=lk_param['maxLevel'], withDerivatives=True)
+    # _, pyr2 = cv2.buildOpticalFlowPyramid(im_warped_0, winSize=lk_param['winSize'], maxLevel=lk_param['maxLevel'], withDerivatives=True)
+
     # run klt tracker forward-backward
-    pa, via, _ = cv2.calcOpticalFlowPyrLK(im0_roi, im_warped_0, p0_roi, None, **lk_param)
-    pb, vib, _ = cv2.calcOpticalFlowPyrLK(im_warped_0, im0_roi, pa, None, **lk_param)
+    pa, va, _ = cv2.calcOpticalFlowPyrLK(im0_roi, im_warped_0, p0_roi, None, **lk_param)
+    pb, vb, _ = cv2.calcOpticalFlowPyrLK(im_warped_0, im0_roi, pa, None, **lk_param)
     fbe = norm_cols(pb - p0_roi)
-    vi = (via.ravel() == 1) & (vib.ravel() == 1) & (fbe < fbt)  # forward-backward error threshold
+    v = (va.ravel() == 1) & (vb.ravel() == 1) & (fbe < fbt)  # forward-backward error threshold
 
     # convert p back to im coordinates
     if translateFlag:
@@ -271,43 +332,44 @@ def KLTregional(im0, im, p0, T, lk_param, fbt=1.0, translateFlag=False):
         p = np.ones([pa.shape[0], 3], np.float32)
         p[:, 0:2] = pa + xy0
         p = p @ T
-
-    # import plots
-    # plots.imshow(im_warped_0, im0_roi)
-    return p, vi
+    # plots.imshow(im_warped_0//2 + im0_roi//2)
+    return p, v
 
 
 # @profile
-def KLTwarp(im, im0, p0):
+def KLTwarp(im, im0, im0_small, p0):
     # Parameters for lucas kanade optical flow
     EPS = cv2.TERM_CRITERIA_EPS
     COUNT = cv2.TERM_CRITERIA_COUNT
-    lk_coarse = dict(winSize=(9, 9), maxLevel=5, criteria=(EPS | COUNT, 10, 0.1))
-    lk_fine = dict(winSize=(41, 41), maxLevel=0, criteria=(EPS | COUNT, 40, 0.001))
+    lk_coarse = dict(winSize=(13, 13), maxLevel=5, criteria=(EPS | COUNT, 20, 0.1))
+    lk_fine = dict(winSize=(31, 31), maxLevel=1, criteria=(EPS | COUNT, 40, 0.001))
 
     # 1. Coarse tracking on full image
-    scale = 0.1
-    im_small = cv2.resize(im, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
-    im0_small = cv2.resize(im0, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
-    p, vi, _ = cv2.calcOpticalFlowPyrLK(im0_small, im_small, p0 * scale, None, **lk_coarse)
-    vi = vi.ravel() == 1
+    scale = 1 / 8
+    im_small = cv2.resize(im, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
+    p, v, _ = cv2.calcOpticalFlowPyrLK(im0_small, im_small, p0 * scale, None, **lk_coarse)
+    v = v.ravel() == 1
     p = p / scale
+    # plots.imshow(im0_small//2+im_small//2, p1=p0[v]*scale,p2=p[v]*scale)
+    T23, inliers = cv2.estimateAffine2D(p0[v], p[v], method=cv2.RANSAC)  # 2x3, better results
+    v[v] = inliers.ravel() == 1
+    # plots.imshow(im0_small//2+im_small//2, p1=p0[v]*scale,p2=p[v]*scale)
 
     # 2. Coarse tracking on reduced, translated region https://www.mathworks.com/discovery/affine-transformation.html
     T = np.eye(3, 2)
-    T[2,] = (p[vi, :] - p0[vi, :]).mean(0)  # translation-only transform
-    p, vi = KLTregional(im0, im, p0, T, lk_coarse, fbt=0.5, translateFlag=True)
+    T[2,] = (p[v] - p0[v]).mean(0)  # translation-only transform
+    p, v = KLTregional(im0, im, p0, T, lk_coarse, fbt=.5, translateFlag=True)
 
-    if vi.sum() < 10:
-        print('TWO FRAMES ARE TOO FAR APART. MATCH SURF POINTS FROM THE GROUND UP')
-        # SURF POINT MATCHING FUNCTION HERE !!!
+    if v.sum() > 10:  # good fit
+        # T23 = cv2.estimateRigidTransform(p0[v], p[v], fullAffine=True)
+        T23, inliers = cv2.estimateAffine2D(p0[v], p[v], method=cv2.RANSAC)  # 2x3, better results
+    else:
+        print('KLT coarse-affine failure, running ORB matches.')
+        T23, inliers = orb_match(im0, im, p0)
 
     # 3. Fine tracking on affine-transformed regions
-    T23 = cv2.estimateRigidTransform(p0[vi, :], p[vi, :], fullAffine=True)
-    # T23, inliers = cv2.estimateAffine2D(p0[vi, :], p[vi, :], method=cv2.RANSAC)  # 2x3
-    p, vi = KLTregional(im0, im, p0, T23.T, lk_fine, fbt=0.1)
-
-    return p, vi
+    p, v = KLTregional(im0, im, p0, T23.T, lk_fine, fbt=0.1)
+    return p, v, im_small
 
 
 # @profile
@@ -317,10 +379,10 @@ def estimatePlatePosition(K, p_im, p_w):
     # x0 = np.concatenate([dcm2rpy(R), t])
 
     # Nonlinear Least Squares
-    p_w3 = np.zeros([p_w.shape[0], 3])
+    p_w3 = np.zeros([p_w.shape[0], 3], np.float32)
     p_w3[:, 0:2] = p_w
 
-    x0 = [0, 0, 0, 0, 0, 1]
+    x0 = np.array([0, 0, 0, 0, 0, 1], np.float32)
     R, t = fcnNLScamera2world(K, p_im, p_w3, x0)
 
     # Residuals
@@ -332,7 +394,7 @@ def estimatePlatePosition(K, p_im, p_w):
 def image2world(K, R, t, p):
     # Copy of MATLAB function pointsToworld
     tform = np.concatenate([R[0:2, :], t[None]]) @ K
-    p3 = np.ones([p.shape[0], 3])
+    p3 = np.ones([p.shape[0], 3], np.float32)
     p3[:, 0:2] = p
     p_w = p3 @ np.linalg.inv(tform)
     return p_w[:, 0:2] / p_w[:, 2:3]
@@ -341,7 +403,7 @@ def image2world(K, R, t, p):
 def world2image(K, R, t, p_w):
     # Copy of MATLAB function worldToImage
     camera_matrix = np.concatenate([R, t[None]]) @ K
-    p4 = np.ones([p_w.shape[0], 4])
+    p4 = np.ones([p_w.shape[0], 4], np.float32)
     p4[:, 0:3] = p_w
     p = p4 @ camera_matrix
     return p[:, 0:2] / p[:, 2:3]
@@ -386,21 +448,20 @@ def extrinsicsPlanar(imagePoints, worldPoints, K):
 
 
 # @profile
-def fcnNLScamera2world(K, p, p_w, x0):
+def fcnNLScamera2world(K, p, p_w, x):
     # K = 3x3 intrinsic matrix
     # p = nx2 image points
     # p_w = nx3 world points
-    def fzhat(a, cam_matrix, om):
-        om[:, 0:3] = a
-        zhat = om @ cam_matrix
-        zhat = zhat[:, 0:2] / zhat[:, 2:3]
-        return zhat.ravel()
+    def fzhat(a, K):
+        # om = np.ones([n, 4])
+        # om[:, 0:3] = a
+        # zhat = om @ cam_matrix
+        zhat = a @ K  # simplify for special case of R=eye(3), t=[0,0,0]
+        return (zhat[:, 0:2] / zhat[:, 2:3]).ravel()
 
     # R = np.eye(3)
     # t = np.zeros([1, 3])
     # cam_matrix = np.concatenate([R, t]) @ K
-    cam_matrix = np.zeros((4, 3))
-    cam_matrix[0:3, 0:3] = K  # only valid for R=eye(3) and t=zeros(1,3)
 
     # https://la.mathworks.com/help/vision/ref/cameramatrix.html
     # Using the camera matrix and homogeneous coordinates, you can project a world point onto the image.
@@ -418,11 +479,9 @@ def fcnNLScamera2world(K, p, p_w, x0):
     dx2 = [0, dx, 0]
     dx3 = [0, 0, dx]
     n = p_w.shape[0]
-    om = np.ones([n, 4])
-    x = np.array([0, 0, 0, x0[3], x0[4], x0[5]])  # nx=numel(x)
-    z = p.ravel().astype('float64')  # nz=numel(z)
-    max_iter = 100
-    damping = .7
+    z = p.ravel()  # nz=numel(z)
+    max_iter = 500
+    mdm = np.diag(np.eye(6) * .5)  # marquardt damping matrix (eye times damping coeficient)
     for i in np.arange(max_iter):
         x03 = x[0:3]
         x36 = x[3:6]
@@ -435,21 +494,20 @@ def fcnNLScamera2world(K, p, p_w, x0):
         b2 = x36 + dx2
         b3 = x36 + dx3
 
-        zhat = fzhat(a0 + b0, cam_matrix, om)
-        J = np.concatenate((fzhat(a1 + b0, cam_matrix, om),
-                            fzhat(a2 + b0, cam_matrix, om),
-                            fzhat(a3 + b0, cam_matrix, om),
-                            fzhat(a0 + b1, cam_matrix, om),
-                            fzhat(a0 + b2, cam_matrix, om),
-                            fzhat(a0 + b3, cam_matrix, om)), axis=0).reshape(n * 2, 6, order='F')
+        zhat = fzhat(a0 + b0, K)
+        J = np.concatenate((fzhat(a1 + b0, K),
+                            fzhat(a2 + b0, K),
+                            fzhat(a3 + b0, K),
+                            fzhat(a0 + b1, K),
+                            fzhat(a0 + b2, K),
+                            fzhat(a0 + b3, K)), axis=0).reshape(n * 2, 6, order='F')
 
-        J = (J - zhat[np.newaxis].T) / dx
+        J = ((J - zhat[None].T) / dx)
         JTJ = J.T @ J
-        mdm = np.diag(np.eye(6) * damping)  # marquardt damping matrix
         delta = np.linalg.inv(JTJ + mdm) @ J.T @ (z - zhat)
         # delta = np.linalg.solve(JTJ + mdm, J.T) @ (z - zhat)  # slower, but possibly more stable??
         x = x + delta
-        delta_rms = math.sqrt((delta ** 2).sum() / len(delta))
+        delta_rms = math.sqrt((delta * delta).sum()) / 6
         if delta_rms < 1E-9:
             break
     if i == (max_iter - 1):

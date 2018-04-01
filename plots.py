@@ -96,7 +96,7 @@ def bokeh_colors(bkpalettes, n):
         return bkpalettes.Viridis256
 
 
-def imshow(im, im2=None):
+def imshow(im, im2=None, p1=None, p2=None):
     # Bokeh Plotting
     io.reset_output()
     io.output_file('bokeh imshow.html', title='imshow')
@@ -117,11 +117,17 @@ def imshow(im, im2=None):
     p.quad(top=[h], bottom=[0], left=[0], right=[w], alpha=0)  # clear rectange hack for tooltip image x,y
 
     # Show plot
+    colors = bokeh_colors(palettes, 3)
     if im2 is None:
+        if p1 is not None:
+            p.circle(p1[:, 0], p1[:, 1], color=colors[0], line_width=2)
+        if p2 is not None:
+            p.circle(p2[:, 0], p2[:, 1], color=colors[1], line_width=2)
+
         io.show(p)  # open a browser
     else:
         h, w = im2.shape
-        q = plotting.figure(x_range=(0, w), y_range=(h, 0), plot_width=round(800 * w / h), plot_height=800,
+        q = plotting.figure(x_range=(0, w), y_range=(h, 0), plot_width=round(600 * w / h), plot_height=600,
                             x_axis_label='pixel (1 - ' + str(w) + ')', y_axis_label='pixel (1 - ' + str(h) + ')',
                             title='image', tools='box_zoom,pan,save,reset,wheel_zoom,crosshair',
                             active_scroll='wheel_zoom', active_inspect=None)
