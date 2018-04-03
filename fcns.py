@@ -3,8 +3,6 @@ import math
 import cv2  # pip install opencv-python, pip install opencv-contrib-python
 import numpy as np
 
-# from scipy import interpolate
-
 # Set options
 # pd.set_option('display.width', desired_width)
 np.set_printoptions(linewidth=320, formatter={'float_kind': '{:11.5g}'.format})  # format short g, %precision=5
@@ -13,18 +11,18 @@ np.set_printoptions(linewidth=320, formatter={'float_kind': '{:11.5g}'.format}) 
 # np.set_printoptions(linewidth=320, formatter={'float_kind': '{:21.15g}'.format})  # format long g, %precision=15
 # %precision '%0.8g'
 
-def norm_cols(x):
-    n = x.shape[1]
-    if n == 3:
-        return (x[:, 0] ** 2 + x[:, 1] ** 2 + x[:, 2] ** 2) ** 0.5
-    elif n == 2:
-        return (x[:, 0] ** 2 + x[:, 1] ** 2) ** 0.5
+def norm(x):
+    s = x.shape
+    if len(s) > 1:
+        n = x.shape[1]
+        if n == 3:
+            return (x[:, 0] ** 2 + x[:, 1] ** 2 + x[:, 2] ** 2) ** 0.5
+        elif n == 2:
+            return (x[:, 0] ** 2 + x[:, 1] ** 2) ** 0.5
+        else:
+            return (x * x).sum(axis=1) ** 0.5
     else:
-        return (x ** 2).sum(axis=1) ** 0.5
-
-
-def norm3(x):
-    return math.sqrt(x[0] ** 2 + x[1] ** 2 + x[2] ** 2)
+        return math.sqrt((x * x).sum())
 
 
 # Define functions
@@ -231,52 +229,42 @@ def printd(dictionary):  # print dictionary
         print('%40s: %s' % (tag, dictionary[tag]))
 
 
-def keypoints2points(kp):
-    # inputs ORB keypoint strucutre and outputs nx2  nparray
-    nk = kp.__len__()
-    p = np.zeros([nk, 2], dtype='float32')
-    for j in np.arange(nk):
-        p[j, :] = kp[j].pt
-    return p
+# @profile
+def boundingRect(x, imshape, border=0):
+    x0, y0, width, height = cv2.boundingRect(x)
+    x0, y0, x1, y1 = x0 - border, y0 - border, x0 + width + border, y0 + height + border
+    if x1 > imshape[1]:  x1 = imshape[1]
+    if y1 > imshape[0]:  y1 = imshape[0]
+    return x0, x1, y0, y1
 
 
 # @profile
-def orb_match(im0, im1, p0):
-    scale = 1 / 2
-    im0 = cv2.resize(im0, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
+def estimateAffine2D_SURF(im1, im2, p1, scale=1.0):
     im1 = cv2.resize(im1, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
+    im2 = cv2.resize(im2, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
+    # orb = cv2.AKAZE_create()
+    orb = cv2.xfeatures2d.SURF_create()
+    bf = cv2.BFMatcher()  # cv2.NORM_HAMMING, crossCheck=True)
+    kp2, des2 = orb.detectAndCompute(im2, mask=None)
 
-    orb = cv2.AKAZE_create()
-    # orb = cv2.xfeatures2d.SURF_create()
-    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-    # bbox = cv2.boundingRect(p0_)  # [x0 y0 width height]
-    # im0_roi = im0[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2]]
-    # mask = np.zeros_like(im0)
-    # mask[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2]] = 1
-    [x0, y0] = p0.min(0) * scale - 25
-    [x1, y1] = p0.max(0) * scale + 25
-    x0 = max(x0, 1).__int__()
-    y0 = max(y0, 1).__int__()
-    x1 = min(x1, im0.shape[1]).__int__()
-    y1 = min(y1, im0.shape[0]).__int__()
-    # im0_roi = im0[y0:y1, x0:x1]
+    a = 0
+    ngood = 0
+    while ngood < 10:
+        x0, x1, y0, y1 = boundingRect(p1 * scale, im1.shape, border=int(a * scale))
+        kp1, des1 = orb.detectAndCompute(im1[y0:y1, x0:x1], mask=None)
+        matches = bf.knnMatch(des1, des2, k=2)
+        # matches = sorted(matches, key=lambda x: x.distance)
+        good = []
+        for m, n in matches:
+            if m.distance < 0.6 * n.distance:
+                good.append(m)
+        ngood = len(good)
+        a += 10
 
-    mask = np.zeros_like(im0)
-    mask[y0:y1, x0:x1] = 1
-    kp0, des0 = orb.detectAndCompute(im0, mask=mask)
-    kp1, des1 = orb.detectAndCompute(im1, None)
-    matches = bf.match(des0, des1)
-
-    n = len(matches)
-    m0 = np.zeros((n, 2))
-    m1 = np.zeros((n, 2))
-    for j in np.arange(n):
-        i0, i1 = matches[j].queryIdx, matches[j].trainIdx
-        m0[j] = kp0[i0].pt
-        m1[j] = kp1[i1].pt
-    # m0 += bbox[0:2]
-    # plots.imshow(im0 // 2 + im1 // 2, None, m0, m1)
-    return cv2.estimateAffine2D(m0 / scale, m1 / scale, method=cv2.RANSAC)  # 2x3, better results
+    m1 = np.float32([kp1[x.queryIdx].pt for x in good]) + np.float32([x0, y0])
+    m2 = np.float32([kp2[x.trainIdx].pt for x in good])
+    # plots.imshow(im1 // 2 + im2 // 2, None, m1, m2)
+    return cv2.estimateAffine2D(m1 / scale, m2 / scale, method=cv2.RANSAC)  # 2x3, better results
 
 
 # @profile
@@ -284,12 +272,7 @@ def KLTregional(im0, im, p0, T, lk_param, fbt=1.0, translateFlag=False):
     T = T.astype('float32')
     # 1. Warp current image to past image frame
     # im_warped_0 = cv2.warpAffine(im, T23, (int(im.shape[1]/2), int(im.shape[0]/2)),flags=cv2.WARP_INVERSE_MAP)
-    [x0, y0] = p0.min(0) - 50
-    [x1, y1] = p0.max(0) + 50
-    x0 = max(x0, 1).__int__()
-    y0 = max(y0, 1).__int__()
-    x1 = min(x1, im.shape[1]).__int__()
-    y1 = min(y1, im.shape[0]).__int__()
+    x0, x1, y0, y1 = boundingRect(p0, im.shape, border=50)
     im0_roi = im0[y0:y1, x0:x1]
     xy0 = np.float32([x0, y0])
     p0_roi = p0 - xy0
@@ -313,8 +296,8 @@ def KLTregional(im0, im, p0, T, lk_param, fbt=1.0, translateFlag=False):
     # im0_roi = clahe.apply(im0_roi)
     # im_warped_0 = clahe.apply(im_warped_0)
 
-    im0_roi = cv2.equalizeHist(im0_roi)
-    im_warped_0 = cv2.equalizeHist(im_warped_0)
+    # im0_roi = cv2.equalizeHist(im0_roi)
+    # im_warped_0 = cv2.equalizeHist(im_warped_0)
 
     # _, pyr1 = cv2.buildOpticalFlowPyramid(im0_roi, winSize=lk_param['winSize'], maxLevel=lk_param['maxLevel'], withDerivatives=True)
     # _, pyr2 = cv2.buildOpticalFlowPyramid(im_warped_0, winSize=lk_param['winSize'], maxLevel=lk_param['maxLevel'], withDerivatives=True)
@@ -322,7 +305,7 @@ def KLTregional(im0, im, p0, T, lk_param, fbt=1.0, translateFlag=False):
     # run klt tracker forward-backward
     pa, va, _ = cv2.calcOpticalFlowPyrLK(im0_roi, im_warped_0, p0_roi, None, **lk_param)
     pb, vb, _ = cv2.calcOpticalFlowPyrLK(im_warped_0, im0_roi, pa, None, **lk_param)
-    fbe = norm_cols(pb - p0_roi)
+    fbe = norm(pb - p0_roi)
     v = (va.ravel() == 1) & (vb.ravel() == 1) & (fbe < fbt)  # forward-backward error threshold
 
     # convert p back to im coordinates
@@ -332,7 +315,11 @@ def KLTregional(im0, im, p0, T, lk_param, fbt=1.0, translateFlag=False):
         p = np.ones([pa.shape[0], 3], np.float32)
         p[:, 0:2] = pa + xy0
         p = p @ T
-    # plots.imshow(im_warped_0//2 + im0_roi//2)
+
+    # residuals = norm(p0_roi[v] - pa[v])
+    # _, i = fcnsigmarejection(residuals, srl=3, ni=3)
+    # v[v] = i
+    # plots.imshow(im_warped_0 // 2 + im0_roi // 2, None, p0_roi[v], pa[v])
     return p, v
 
 
@@ -341,31 +328,30 @@ def KLTwarp(im, im0, im0_small, p0):
     # Parameters for lucas kanade optical flow
     EPS = cv2.TERM_CRITERIA_EPS
     COUNT = cv2.TERM_CRITERIA_COUNT
-    lk_coarse = dict(winSize=(13, 13), maxLevel=5, criteria=(EPS | COUNT, 20, 0.1))
-    lk_fine = dict(winSize=(31, 31), maxLevel=1, criteria=(EPS | COUNT, 40, 0.001))
+    lk_coarse = dict(winSize=(15, 15), maxLevel=11, criteria=(EPS | COUNT, 20, 0.1))
+    lk_fine = dict(winSize=(51, 51), maxLevel=1, criteria=(EPS | COUNT, 40, 0.001))
 
-    # 1. Coarse tracking on full image
-    scale = 1 / 8
+    # 1. Coarse tracking on 1/8 scale full image
+    scale = 1 / 4
     im_small = cv2.resize(im, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
     p, v, _ = cv2.calcOpticalFlowPyrLK(im0_small, im_small, p0 * scale, None, **lk_coarse)
     v = v.ravel() == 1
-    p = p / scale
-    # plots.imshow(im0_small//2+im_small//2, p1=p0[v]*scale,p2=p[v]*scale)
+    p /= scale
     T23, inliers = cv2.estimateAffine2D(p0[v], p[v], method=cv2.RANSAC)  # 2x3, better results
     v[v] = inliers.ravel() == 1
     # plots.imshow(im0_small//2+im_small//2, p1=p0[v]*scale,p2=p[v]*scale)
 
-    # 2. Coarse tracking on reduced, translated region https://www.mathworks.com/discovery/affine-transformation.html
+    # 2. Coarse tracking on full resolution roi https://www.mathworks.com/discovery/affine-transformation.html
+    translation = p[v] - p0[v]
     T = np.eye(3, 2)
-    T[2,] = (p[v] - p0[v]).mean(0)  # translation-only transform
+    T[2,] = translation.mean(0)  # translation-only transform
     p, v = KLTregional(im0, im, p0, T, lk_coarse, fbt=.5, translateFlag=True)
 
     if v.sum() > 10:  # good fit
-        # T23 = cv2.estimateRigidTransform(p0[v], p[v], fullAffine=True)
         T23, inliers = cv2.estimateAffine2D(p0[v], p[v], method=cv2.RANSAC)  # 2x3, better results
     else:
-        print('KLT coarse-affine failure, running ORB matches.')
-        T23, inliers = orb_match(im0, im, p0)
+        print('KLT coarse-affine failure, running SURF matches full scale.')
+        T23, inliers = estimateAffine2D_SURF(im0, im, p0, scale=1)
 
     # 3. Fine tracking on affine-transformed regions
     p, v = KLTregional(im0, im, p0, T23.T, lk_fine, fbt=0.1)
@@ -373,7 +359,7 @@ def KLTwarp(im, im0, im0_small, p0):
 
 
 # @profile
-def estimatePlatePosition(K, p_im, p_w):
+def estimatePlatePosition(K, p_im, p_w, t=None, R=None):
     # Linear solution
     # R, t = extrinsicsPlanar(p_im, p_w, K)
     # x0 = np.concatenate([dcm2rpy(R), t])
@@ -382,7 +368,11 @@ def estimatePlatePosition(K, p_im, p_w):
     p_w3 = np.zeros([p_w.shape[0], 3], np.float32)
     p_w3[:, 0:2] = p_w
 
-    x0 = np.array([0, 0, 0, 0, 0, 1], np.float32)
+    # if t is None:
+    x0 = np.array([1, 0, 0, 0, 0, 1], np.float32)
+    # else:
+    #    rpy = dcm2rpy(R)
+    #    x0 = np.float32(np.concatenate((rpy[None],t[None]), axis=1)).ravel()
     R, t = fcnNLScamera2world(K, p_im, p_w3, x0)
 
     # Residuals
@@ -396,6 +386,7 @@ def image2world(K, R, t, p):
     tform = np.concatenate([R[0:2, :], t[None]]) @ K
     p3 = np.ones([p.shape[0], 3], np.float32)
     p3[:, 0:2] = p
+
     p_w = p3 @ np.linalg.inv(tform)
     return p_w[:, 0:2] / p_w[:, 2:3]
 
@@ -425,7 +416,7 @@ def extrinsicsPlanar(imagePoints, worldPoints, K):
     # Ainv = np.linalg.inv(A)
     # b = Ainv @ h1[:, None]
     b = np.linalg.solve(A, h1)  # slower than np.linalg.inv(A) @ h1[:,None]
-    lambda_ = 1 / norm3(b)  # lambda_ = 1 / norm(A \ h1) in MATLAB
+    lambda_ = 1 / norm(b)  # lambda_ = 1 / norm(A \ h1) in MATLAB
 
     # Compute rotation
     r1 = b * lambda_  # r1 = np.linalg.solve(A, lambda_ * h1)
@@ -452,10 +443,9 @@ def fcnNLScamera2world(K, p, p_w, x):
     # K = 3x3 intrinsic matrix
     # p = nx2 image points
     # p_w = nx3 world points
+    # p_w = p_w @ cam2ned().T
+
     def fzhat(a, K):
-        # om = np.ones([n, 4])
-        # om[:, 0:3] = a
-        # zhat = om @ cam_matrix
         zhat = a @ K  # simplify for special case of R=eye(3), t=[0,0,0]
         return (zhat[:, 0:2] / zhat[:, 2:3]).ravel()
 
@@ -464,12 +454,8 @@ def fcnNLScamera2world(K, p, p_w, x):
     # cam_matrix = np.concatenate([R, t]) @ K
 
     # https://la.mathworks.com/help/vision/ref/cameramatrix.html
-    # Using the camera matrix and homogeneous coordinates, you can project a world point onto the image.
+    # Project a world point X onto the image point x with arbitrary scale factor w
     # w * [x,y,1] = [X,Y,Z,1] * camMatrix
-    # (X,Y,Z): world coordinates of a point
-    # (x,y): coordinates of the corresponding image point
-    # w: arbitrary scale factor
-
     # x = 6 x 1 for 6 parameters
     # J = n x 6
     # z = n x 1 for n measurements
@@ -480,15 +466,15 @@ def fcnNLScamera2world(K, p, p_w, x):
     dx3 = [0, 0, dx]
     n = p_w.shape[0]
     z = p.ravel()  # nz=numel(z)
-    max_iter = 500
-    mdm = np.diag(np.eye(6) * .5)  # marquardt damping matrix (eye times damping coeficient)
+    max_iter = 100
+    mdm = np.diag(np.eye(6) * 1)  # marquardt damping matrix (eye times damping coeficient)
     for i in np.arange(max_iter):
         x03 = x[0:3]
         x36 = x[3:6]
-        a0 = p_w @ rpy2dcm(x03)
-        a1 = p_w @ rpy2dcm(x03 + dx1)
-        a2 = p_w @ rpy2dcm(x03 + dx2)
-        a3 = p_w @ rpy2dcm(x03 + dx3)
+        a0 = p_w @ quat32rotm(x03)
+        a1 = p_w @ quat32rotm(x03 + dx1)
+        a2 = p_w @ quat32rotm(x03 + dx2)
+        a3 = p_w @ quat32rotm(x03 + dx3)
         b0 = x36
         b1 = x36 + dx1
         b2 = x36 + dx2
@@ -504,16 +490,16 @@ def fcnNLScamera2world(K, p, p_w, x):
 
         J = ((J - zhat[None].T) / dx)
         JTJ = J.T @ J
-        delta = np.linalg.inv(JTJ + mdm) @ J.T @ (z - zhat)
+        delta = np.linalg.inv(JTJ + mdm) @ J.T @ (z - zhat) * min((i + 1) * .05, 1)
         # delta = np.linalg.solve(JTJ + mdm, J.T) @ (z - zhat)  # slower, but possibly more stable??
         x = x + delta
-        delta_rms = math.sqrt((delta * delta).sum()) / 6
-        if delta_rms < 1E-9:
+        if rms(delta) < 1E-9:
             break
     if i == (max_iter - 1):
         print('WARNING: fcnNLScamera2world() reaching max iterations!')
-    R = rpy2dcm(x[0:3])
+    R = quat32rotm(x[0:3])
     t = x[3:6]
+    # print(str(x) + str(i))
     return R, t
 
 
@@ -525,19 +511,55 @@ def rpy2dcm(rpy):
     cr = math.cos(rpy[0])
     cp = math.cos(rpy[1])
     cy = math.cos(rpy[2])
-
     return np.array([[cp * cy, sr * sp * cy - cr * sy, cr * sp * cy + sr * sy],
                      [cp * sy, sr * sp * sy + cr * cy, cr * sp * sy - sr * cy],
                      [- sp, sr * cp, cr * cp]])
 
 
-def dcm2rpy(DCM):
+def dcm2rpy(R):
     # direction cosine matrix to [roll, pitch, yaw] aka [phi, theta, psi]
     rpy = np.zeros(3)
-    rpy[0] = math.atan(DCM[2, 1] / DCM[2, 2])
-    rpy[1] = math.asin(-DCM[2, 0])
-    rpy[2] = math.atan2(DCM[1, 0], DCM[0, 0])
+    rpy[0] = math.atan(R[2, 1] / R[2, 2])
+    rpy[1] = math.asin(-R[2, 0])
+    rpy[2] = math.atan2(R[1, 0], R[0, 0])
     return rpy
+
+
+def quat32rotm(q):
+    # 3 element quaternion representation (roll is norm(q))
+    r = norm(q)
+    return rpy2dcm([r, math.asin(-q[2] / r), math.atan(q[1] / q[0])])
+
+
+def quat2rotm(q):
+    # R = np.zeros(3,3)
+    q = q / norm(q)
+    s, x, y, z = q
+    return np.array([1 - 2 * (y * y + z * z), 2 * (x * y - s * z), 2 * (x * z + s * y),
+                     2 * (x * y + s * z), 1 - 2 * (x * x + z * z), 2 * (y * z - s * x),
+                     2 * (x * z - s * y), 2 * (y * z + s * x), 1 - 2 * (x * x + y * y)]).reshape(3, 3)
+
+
+def rotm2quat(R):
+    q = np.zeros(4)
+    return q
+
+
+def fcnsigmarejection(x, srl=3.0, ni=3):
+    v = np.empty_like(x, dtype=bool)
+    v[:] = True
+    x = x.ravel()
+    for m in np.arange(ni):
+        s = x.std() * srl
+        mu = x.mean()
+        vi = (x < mu + s) & (x > mu - s)
+        x = x[vi]
+        v[v] = vi
+    return x, v
+
+
+def rms(x):
+    return math.sqrt((x * x).sum()) / x.size
 
 # SCRATCH -------------------------------------------------------------------------------
 # import numpy as np

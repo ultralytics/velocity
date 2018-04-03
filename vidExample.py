@@ -1,28 +1,29 @@
-# from fcns import *
+from fcns import *
+
+
 # @profile
 def vidExamplefcn():
     import time
-    from fcns import np, cv2, getCameraParams, worldPointsLicensePlate, importEXIF, fcnEXIF2LLAT, \
-        estimatePlatePosition, image2world, KLTwarp, norm3, cam2ned  # local functions
-    import scipy.io  # , plots
+    # from fcns import np, cv2, getCameraParams, worldPointsLicensePlate, importEXIF, fcnEXIF2LLAT, \
+    #    estimatePlatePosition, image2world, KLTwarp, norm, cam2ned  # local functions
+    import scipy.io
+    import plots
 
     isVideo = True
     pathname = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/'
+    n = 10  # number of frames to read
     if isVideo:
-        filename = pathname + 'IMG_4134.m4v'
-        startFrame = 19  # 0 indexed
+        # filename, startframe = pathname + 'IMG_4119.MOV', 41
+        filename, startframe = pathname + 'IMG_4134.MOV', 19
         readSpeed = 1  # read every # frames. ref = 1 reads every frame, ref = 2 skips every other frame, etc.
-        n = 10  # number of frames to read
-        frames = np.arange(n) * readSpeed + startFrame  # video frames to read
-        # filename = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/IMG_411%01d.JPG'
+        frames = np.arange(n) * readSpeed + startframe  # video frames to read
         cam, cap = getCameraParams(filename, platform='iPhone 6s')
         print('Starting image processing on %s ...' % filename)
-        mat = scipy.io.loadmat('/Users/glennjocher/Google Drive/MATLAB/SPEEDTRAP/IMG_4134.MOV.mat')
+        mat = scipy.io.loadmat('/Users/glennjocher/Google Drive/MATLAB/SPEEDTRAP/' + cam['filename'] + '.mat')
     else:
-        # frames = np.arange(4122,4133+1)
         # imagename = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/IMG_4124.JPG'
+        # filename = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/IMG_411%01d.JPG'
         frames = np.array([4122, 4123, 4124, 4125, 4126, 4127, 4128, 4129, 4130, 4131, 4132, 4133])
-        n = 10  # frames.size
         imagename = []
         for i in frames:
             imagename.append(pathname + 'IMG_' + str(i) + '.JPG')
@@ -38,6 +39,7 @@ def vidExamplefcn():
     A = np.zeros([n, 14])  # [xyz, rpy, xyz_ecef, lla, t, number](nx14) camera information
     B = np.zeros([n, 14])  # [xyz, rpy, xyz_ecef, lla, t, number](nx14) car information
     S = np.empty([n, 9])  # stats
+    _ = np.linalg.inv(np.random.rand(3, 3) @ np.random.rand(3, 3))
 
     # Iterate over images
     proc_dt = np.zeros([n, 1])
@@ -45,12 +47,11 @@ def vidExamplefcn():
                                      'speed', '#', '(s)', '#', '(pixels)', '(s)', '(s)', '(m)', '(m)', '(km/h)'))
     for i in range(0, n):
         tic = time.time()
-
         # read image
         if isVideo:
             if i == 0:
-                if startFrame != 0:
-                    cap.set(1, startFrame)
+                if startframe != 0:
+                    cap.set(1, startframe)
             else:
                 df = frames[i] - frames[i - 1]
                 if df > 1:
@@ -85,43 +86,38 @@ def vidExamplefcn():
         # KLT tracking
         if i == 0:
             q *= scale
-            bbox = cv2.boundingRect(q)  # [x0 y0 width height]
-            roi = im[bbox[1]:bbox[1] + bbox[3], bbox[0]:bbox[0] + bbox[2]]
-            p = cv2.goodFeaturesToTrack(roi, 300, 0.01, 1, useHarrisDetector=False, ).squeeze() + np.float32(bbox[0:2])
-
+            bbox = boundingRect(q, im.shape, border=1)
+            roi = im[bbox[2]:bbox[3], bbox[0]:bbox[1]]
+            p = cv2.goodFeaturesToTrack(roi, 1000, 0.01, 0, blockSize=5, useHarrisDetector=True).squeeze() + np.float32(
+                [bbox[0], bbox[2]])
+            p = cv2.cornerSubPix(im, p, (5, 5), (-1, -1),
+                                 (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.001))
+            # p = scipy.io.loadmat('/Users/glennjocher/Documents/PyCharmProjects/Velocity/data/pc_v7.mat')['pc']
             p = np.concatenate((q, p), axis=0)
-            vi = np.empty(p.shape[0], dtype=bool)  # valid points in image i
-            vi[:] = True
-            vg = vi  # P[3,] valid points globally
-            P = np.empty([4, p.shape[0], n])  # KLT [x y valid]
-            P[:] = np.nan
-
             t, R, residuals, p_ = estimatePlatePosition(K, p[0:4, :], worldPointsLicensePlate())
             p_w = image2world(K, R, t, p)
-
             p_ = p
-            # t, R, residuals, p_ = estimatePlatePosition(K, p, p_w)
 
             # initialize
-            imfirst = im
-            dt = 0
-            dr = 0
-            r = 0
-            speed = 0
-            im0_small = cv2.resize(im, (0, 0), fx=1 / 8, fy=1 / 8, interpolation=cv2.INTER_NEAREST)
+            vi = np.empty(p.shape[0], dtype=bool)  # valid points in image i
+            P = np.empty([4, p.shape[0], n])  # KLT [x y valid]
+            vi[:] = True
+            vg = vi  # P[3,] valid points globally
+            P[:] = np.nan
+            imfirst, dt, dr, r, speed = im, 0, 0, 0, 0
+            im0_small = cv2.resize(im, (0, 0), fx=1 / 4, fy=1 / 4, interpolation=cv2.INTER_NEAREST)
         else:
             # update
             p, vi, im0_small = KLTwarp(im, im0, im0_small, p0)
+            p_w = p_w[vi]
+            p = p[vi]
+            vg[vg] = vi
 
             # Get plate position
-            t, R, residuals, p_ = estimatePlatePosition(K, p, p_w)
+            t, R, residuals, p_ = estimatePlatePosition(K, p, p_w, t, R)
 
-            vg[vg] = vi
-            p = p[vi]
-            p_ = p_[vi]
-            p_w = p_w[vi]
             dt = A[i, 12] - A[i - 1, 12]
-            dr = norm3(cam2ned() @ t - B[i - 1, 0:3])
+            dr = norm(t - B[i - 1, 0:3])
             r += dr
             speed = dr / dt * 3.6  # m/s to km/h
             del im0
@@ -129,10 +125,10 @@ def vidExamplefcn():
         # Print image[i] results
         proc_dt[i] = time.time() - tic
         mr = residuals.sum() / residuals.size
-        S[i, :] = (frames[i], proc_dt[i], p.shape[0], mr, dt, A[i, 12], dr, r, speed)
-        print('%13g%13.3f%13g%13.3f%13.3f%13.3f%13.2f%13.2f%13.3f' % tuple(S[i, :]))
+        S[i, :] = (i, proc_dt[i], p.shape[0], mr, dt, A[i, 12], dr, r, speed)
+        print('%13g%13.3f%13g%13.3f%13.3f%13.3f%13.2f%13.2f%13.1f' % tuple(S[i, :]))
 
-        B[i, 0:3] = cam2ned() @ t  # car xyz
+        B[i, 0:3] = t  # car xyz
         P[0, vg, i] = p[:, 0]  # x
         P[1, vg, i] = p[:, 1]  # y
         P[2, vg, i] = p_[:, 0]  # x_proj
@@ -147,7 +143,6 @@ def vidExamplefcn():
     print('Residuals = %.3f +/- %.3f pixels' % (S[1:, 3].mean(), S[1:, 3].std()))
     print('Processed %g images: %s in %.2fs (%.2ffps)\n' % (n, frames[:], dta, n / dta))
 
-    import plots
     plots.plotresults(cam, im // 2 + imfirst // 2, P, S, B, bbox=bbox)  # // is integer division
 
 
