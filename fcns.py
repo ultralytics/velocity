@@ -233,6 +233,8 @@ def printd(dictionary):  # print dictionary
 def boundingRect(x, imshape, border=0):
     x0, y0, width, height = cv2.boundingRect(x)
     x0, y0, x1, y1 = x0 - border, y0 - border, x0 + width + border, y0 + height + border
+    if x0 < 1: x0 = 1
+    if y0 < 1: y0 = 1
     if x1 > imshape[1]:  x1 = imshape[1]
     if y1 > imshape[0]:  y1 = imshape[0]
     return x0, x1, y0, y1

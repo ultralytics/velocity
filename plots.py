@@ -17,7 +17,7 @@ def plotresults(cam, im, P, S, B, bbox):
     hoverImage = models.HoverTool(tooltips=[('(x, y)', '$x{1.11}, $y{1.11}')], point_policy='follow_mouse')
 
     # Plot image
-    a = plotting.figure(x_range=(0, w), y_range=(h, 0), plot_width=round(800 * w / h), plot_height=800,
+    a = plotting.figure(x_range=(0, w), y_range=(h, 0), plot_width=round(600 * w / h), plot_height=600,
                         x_axis_label='pixel (1 - ' + str(w) + ')', y_axis_label='pixel (1 - ' + str(h) + ')',
                         title=cam['filename'],
                         tools='box_zoom,pan,save,reset,wheel_zoom',
@@ -35,12 +35,13 @@ def plotresults(cam, im, P, S, B, bbox):
 
     # Plot points
     if colorbyframe:
-        for i in list((0, n - 1)):
+        # for i in list((0, n - 1)):  # plot first and last
+        for i in np.arange(n):  # plot all
             a.circle(P[0, :, i], P[1, :, i], color=colors[i], legend='image ' + str(i), line_width=1)
-            a.circle(P[2, :, i], P[3, :, i], color=colors[i], size=9, alpha=.5)
+            a.circle(P[2, :, i], P[3, :, i], color=colors[i], size=8, alpha=.6)
     else:
         a.circle(P[0].ravel(), P[1].ravel(), color=colors[0], legend='Points', line_width=2)
-        a.circle(P[2].ravel(), P[3].ravel(), color=colors[1], legend='Reprojections', size=9, alpha=.7)
+        a.circle(P[2].ravel(), P[3].ravel(), color=colors[1], legend='Reprojections', size=8, alpha=.6)
 
     # Plot 2 - 3d
     x, y, z = np.split(B[:, :3], 3, axis=1)
@@ -50,26 +51,28 @@ def plotresults(cam, im, P, S, B, bbox):
 
     # Plot 3 - distance
     c = plotting.figure(x_range=(0, n), y_range=(0, round(S[1:, 7].max())), plot_width=350, plot_height=300,
-                        x_axis_label='image', y_axis_label='distance (m)', title='Distance',
+                        x_axis_label='image', y_axis_label='distance (m)',
+                        title='Distance = %.2fm in %.3fs' % (S[-1, 7], S[-1, 5] - S[0, 5]),
                         tools='save,reset,hover', active_inspect='hover')
 
     # Plot 4 - speed
     d = plotting.figure(x_range=(0, n), y_range=(0, S[1:, 8].max() + 1), plot_width=350,
                         plot_height=300,
-                        x_axis_label='image', y_axis_label='speed (km/h)', title='Speed',
+                        x_axis_label='image', y_axis_label='speed (km/h)',
+                        title='Speed = %.2f +/- %.2f km/h' % (S[1:, 8].mean(), S[1:, 8].std()),
                         tools='save,reset,hover', active_inspect='hover')
 
     # Circles plots 2-4
-    # if colorbyframe:
-    #    for i in np.arange(n):
-    #        b.circle(y[i], x[i], color=colors[i], line_width=2)
-    #        c.circle(xn[i], S[i, 7], color=colors[i], line_width=2)
-    #        d.circle(xn[i], S[i, 8], color=colors[i], line_width=2)
-    # else:
-    b.circle(x.ravel(), z.ravel(), color=colors[0], line_width=2)
     b.circle(0, 0, color=colors[-1], line_width=15)
-    c.circle(xn[1:], S[1:, 7], color=colors[0], line_width=2)
-    d.circle(xn[1:], S[1:, 8], color=colors[0], line_width=2)
+    if colorbyframe:
+        for i in np.arange(n):
+            b.circle(x[i], z[i], color=colors[i], line_width=2)
+            c.circle(xn[i], S[i, 7], color=colors[i], line_width=2)
+            d.circle(xn[i], S[i, 8], color=colors[i], line_width=2)
+    else:
+        b.circle(x.ravel(), z.ravel(), color=colors[0], line_width=2)
+        c.circle(xn[1:], S[1:, 7], color=colors[0], line_width=2)
+        d.circle(xn[1:], S[1:, 8], color=colors[0], line_width=2)
 
     # Plot lines
     a.multi_line(P[0].tolist(), P[1].tolist(), color='white', alpha=.7, line_width=1)

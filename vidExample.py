@@ -1,36 +1,32 @@
 from fcns import *
 
-
 # @profile
 def vidExamplefcn():
     import time
-    # from fcns import np, cv2, getCameraParams, worldPointsLicensePlate, importEXIF, fcnEXIF2LLAT, \
-    #    estimatePlatePosition, image2world, KLTwarp, norm, cam2ned  # local functions
     import scipy.io
     import plots
 
+    n = 21  # number of frames to read
     isVideo = True
-    pathname = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/'
-    n = 10  # number of frames to read
+    patha = '/Users/glennjocher/Downloads/DATA/VSM/'
+    pathb = '/Users/glennjocher/Google Drive/MATLAB/SPEEDTRAP/'
     if isVideo:
-        # filename, startframe = pathname + 'IMG_4119.MOV', 41
-        filename, startframe = pathname + 'IMG_4134.MOV', 19
-        readSpeed = 1  # read every # frames. ref = 1 reads every frame, ref = 2 skips every other frame, etc.
+        # filename, startframe = patha + '2018.3.11/IMG_4119.MOV', 41
+        # filename, startframe = patha + '2018.3.11/IMG_4134.MOV', 19
+        filename, startframe = patha + '2018.3.30/IMG_4238.m4v', 8
+        readSpeed = 1  # read every # frames
         frames = np.arange(n) * readSpeed + startframe  # video frames to read
-        cam, cap = getCameraParams(filename, platform='iPhone 6s')
-        print('Starting image processing on %s ...' % filename)
-        mat = scipy.io.loadmat('/Users/glennjocher/Google Drive/MATLAB/SPEEDTRAP/' + cam['filename'] + '.mat')
     else:
-        # imagename = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/IMG_4124.JPG'
-        # filename = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/IMG_411%01d.JPG'
+        # imagename = patha + '2018.3.11/IMG_4124.JPG'
+        # filename = patha + '2018.3.11/IMG_411%01d.JPG'
         frames = np.array([4122, 4123, 4124, 4125, 4126, 4127, 4128, 4129, 4130, 4131, 4132, 4133])
         imagename = []
         for i in frames:
-            imagename.append(pathname + 'IMG_' + str(i) + '.JPG')
+            imagename.append(patha + '2018.3.11/IMG_' + str(i) + '.JPG')
         filename = imagename[0]
-        print('Starting image processing on ' + imagename[0] + ' through ' + imagename[-1] + ' ...')
-        cam, cap_unused = getCameraParams(filename, platform='iPhone 6s')
-        mat = scipy.io.loadmat('/Users/glennjocher/Google Drive/MATLAB/SPEEDTRAP/IMG_4122.JPG.mat')
+
+    cam, cap = getCameraParams(filename, platform='iPhone 6s')
+    mat = scipy.io.loadmat(pathb + cam['filename'] + '.mat')
     q = mat['q'].astype(np.float32)
 
     # Define camera and car information matrices
@@ -39,10 +35,11 @@ def vidExamplefcn():
     A = np.zeros([n, 14])  # [xyz, rpy, xyz_ecef, lla, t, number](nx14) camera information
     B = np.zeros([n, 14])  # [xyz, rpy, xyz_ecef, lla, t, number](nx14) car information
     S = np.empty([n, 9])  # stats
-    _ = np.linalg.inv(np.random.rand(3, 3) @ np.random.rand(3, 3))
+    _ = np.linalg.inv(np.random.rand(3, 3) @ np.random.rand(3, 3))  # for profiling purposes
 
     # Iterate over images
     proc_dt = np.zeros([n, 1])
+    print('Starting image processing on %s ...' % filename)
     print(('\n' + '%13s' * 9) * 2 % ('image', 'procTime', 'pointTracks', 'metric', 'dt', 'time', 'dx', 'distance',
                                      'speed', '#', '(s)', '#', '(pixels)', '(s)', '(s)', '(m)', '(m)', '(km/h)'))
     for i in range(0, n):
@@ -86,7 +83,7 @@ def vidExamplefcn():
         # KLT tracking
         if i == 0:
             q *= scale
-            bbox = boundingRect(q, im.shape, border=1)
+            bbox = boundingRect(q, im.shape, border=0)
             roi = im[bbox[2]:bbox[3], bbox[0]:bbox[1]]
             p = cv2.goodFeaturesToTrack(roi, 1000, 0.01, 0, blockSize=5, useHarrisDetector=True).squeeze() + np.float32(
                 [bbox[0], bbox[2]])
