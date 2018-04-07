@@ -1,12 +1,15 @@
 from fcns import *
 
+
+# from darkflow.net.build import TFNet
+
 # @profile
 def vidExamplefcn():
     import time
     import scipy.io
-    import plots
+    # import plots
 
-    n = 21  # number of frames to read
+    n = 10  # number of frames to read
     isVideo = True
     patha = '/Users/glennjocher/Downloads/DATA/VSM/'
     pathb = '/Users/glennjocher/Google Drive/MATLAB/SPEEDTRAP/'
@@ -75,11 +78,6 @@ def vidExamplefcn():
         if scale != 1:
             im = cv2.resize(im, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
 
-        # im = cv2.equalizeHist(im)
-        # if i==0:
-        #    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(80, 80))
-        # im = clahe.apply(im)
-
         # KLT tracking
         if i == 0:
             q *= scale
@@ -140,7 +138,7 @@ def vidExamplefcn():
     print('Residuals = %.3f +/- %.3f pixels' % (S[1:, 3].mean(), S[1:, 3].std()))
     print('Processed %g images: %s in %.2fs (%.2ffps)\n' % (n, frames[:], dta, n / dta))
 
-    plots.plotresults(cam, im // 2 + imfirst // 2, P, S, B, bbox=bbox)  # // is integer division
+    # plots.plotresults(cam, im // 2 + imfirst // 2, P, S, B, bbox=bbox)  # // is integer division
 
 
 vidExamplefcn()

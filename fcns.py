@@ -301,10 +301,8 @@ def KLTregional(im0, im, p0, T, lk_param, fbt=1.0, translateFlag=False):
     # im0_roi = cv2.equalizeHist(im0_roi)
     # im_warped_0 = cv2.equalizeHist(im_warped_0)
 
-    # _, pyr1 = cv2.buildOpticalFlowPyramid(im0_roi, winSize=lk_param['winSize'], maxLevel=lk_param['maxLevel'], withDerivatives=True)
-    # _, pyr2 = cv2.buildOpticalFlowPyramid(im_warped_0, winSize=lk_param['winSize'], maxLevel=lk_param['maxLevel'], withDerivatives=True)
-
     # run klt tracker forward-backward
+    # _, pyr1 = cv2.buildOpticalFlowPyramid(im0_roi, winSize=lk_param['winSize'], maxLevel=lk_param['maxLevel'], withDerivatives=True)
     pa, va, _ = cv2.calcOpticalFlowPyrLK(im0_roi, im_warped_0, p0_roi, None, **lk_param)
     pb, vb, _ = cv2.calcOpticalFlowPyrLK(im_warped_0, im0_roi, pa, None, **lk_param)
     fbe = norm(pb - p0_roi)
