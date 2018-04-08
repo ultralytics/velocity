@@ -101,7 +101,11 @@ def imshow(im, im2=None, p1=None, p2=None):
     # Bokeh Plotting
     io.reset_output()
     io.output_file('bokeh imshow.html', title='imshow')
-    h, w = im.shape
+    colorImage = (len(im.shape) == 3)
+    if colorImage:
+        h, w, _ = im.shape
+    else:
+        h, w = im.shape
 
     # Setup tools
     hoverImage = models.HoverTool(tooltips=[('index', '$index'), ('(x, y)', '($x{(1.11)}, $y{(1.11)})')],
@@ -113,7 +117,16 @@ def imshow(im, im2=None, p1=None, p2=None):
                         active_scroll='wheel_zoom', active_inspect=None)
 
     # Plot image
-    p.image(image=[np.flip(im, 0)], x=0, y=h, dw=w, dh=h, palette=palettes.Greys256)
+    if colorImage:
+        imc = np.ones((im.shape[0], im.shape[1], 4), dtype=np.uint32) * 255
+        imc[:, :, 0:3] = im
+
+        img = np.empty((h, w), dtype=np.uint32)
+        view = img.view(dtype=np.uint8).reshape((h, w, 4))
+        view[:, :, :] = np.flipud(np.asarray(imc))
+        p.image_rgba(image=[img], x=0, y=h, dw=w, dh=h)
+    else:
+        p.image(image=[np.flip(im, 0)], x=0, y=h, dw=w, dh=h, palette=palettes.Greys256)
     p.quad(top=[h], bottom=[0], left=[0], right=[w], alpha=0)  # clear rectange hack for tooltip image x,y
     p.add_tools(hoverImage)
 

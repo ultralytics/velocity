@@ -3,6 +3,9 @@ import math
 import cv2  # pip install opencv-python, pip install opencv-contrib-python
 import numpy as np
 
+# import autograd.numpy as np
+# from autograd import jacobian
+
 # Set options
 # pd.set_option('display.width', desired_width)
 np.set_printoptions(linewidth=320, formatter={'float_kind': '{:11.5g}'.format})  # format short g, %precision=5
@@ -444,9 +447,18 @@ def fcnNLScamera2world(K, p, p_w, x):
     # p = nx2 image points
     # p_w = nx3 world points
     # p_w = p_w @ cam2ned().T
+    K = K.astype(float)
+    p = p.astype(float)
+    p_w = p_w.astype(float)
+    x = x.astype(float)
+
 
     def fzhat(a, K):
         zhat = a @ K  # simplify for special case of R=eye(3), t=[0,0,0]
+        return (zhat[:, 0:2] / zhat[:, 2:3]).ravel()
+
+    def fzhat0(x, p_w, K):  # for autograd
+        zhat = (p_w @ rpy2dcm(x[0:3]) + x[3:6]) @ K
         return (zhat[:, 0:2] / zhat[:, 2:3]).ravel()
 
     # R = np.eye(3)
@@ -468,30 +480,32 @@ def fcnNLScamera2world(K, p, p_w, x):
     z = p.ravel()  # nz=numel(z)
     max_iter = 100
     mdm = np.diag(np.eye(6) * 1)  # marquardt damping matrix (eye times damping coeficient)
+    # jfunc = jacobian(fzhat0)
     for i in np.arange(max_iter):
         x03 = x[0:3]
         x36 = x[3:6]
         a0 = p_w @ quat32rotm(x03)
-        a1 = p_w @ quat32rotm(x03 + dx1)
+        a1 = p_w @ quat32rotm(x03 + dx1)  # quat2rotm(
         a2 = p_w @ quat32rotm(x03 + dx2)
         a3 = p_w @ quat32rotm(x03 + dx3)
         b0 = x36
         b1 = x36 + dx1
         b2 = x36 + dx2
         b3 = x36 + dx3
-
         zhat = fzhat(a0 + b0, K)
-        J = np.concatenate((fzhat(a1 + b0, K),
-                            fzhat(a2 + b0, K),
-                            fzhat(a3 + b0, K),
-                            fzhat(a0 + b1, K),
-                            fzhat(a0 + b2, K),
-                            fzhat(a0 + b3, K)), axis=0).reshape(n * 2, 6, order='F')
 
-        J = ((J - zhat[None].T) / dx)
-        JTJ = J.T @ J
-        delta = np.linalg.inv(JTJ + mdm) @ J.T @ (z - zhat) * min((i + 1) * .05, 1)
-        # delta = np.linalg.solve(JTJ + mdm, J.T) @ (z - zhat)  # slower, but possibly more stable??
+        # Ja = jfunc(x, p_w, K)  # autograd jacobian (super slow!!)
+        JT = np.concatenate((fzhat(a1 + b0, K),
+                             fzhat(a2 + b0, K),
+                             fzhat(a3 + b0, K),
+                             fzhat(a0 + b1, K),
+                             fzhat(a0 + b2, K),
+                             fzhat(a0 + b3, K)), axis=0).reshape(6, n * 2)  # J Transpose
+        JT = (JT - zhat) / dx
+
+        JTJ = JT @ JT.T  # J.T @ J
+        delta = np.linalg.inv(JTJ + mdm) @ JT @ (z - zhat) * min(((i + 1) * .2) ** 2, 1)
+        # delta = np.linalg.solve(JTJ + mdm, JT) @ (z - zhat)  # slower, but possibly more stable??
         x = x + delta
         if rms(delta) < 1E-9:
             break
@@ -499,7 +513,7 @@ def fcnNLScamera2world(K, p, p_w, x):
         print('WARNING: fcnNLScamera2world() reaching max iterations!')
     R = quat32rotm(x[0:3])
     t = x[3:6]
-    # print(str(x) + str(i))
+    # print('%i steps, residual rms = %.5f' % (i,(z - zhat).mean()))
     return R, t
 
 
@@ -560,51 +574,3 @@ def fcnsigmarejection(x, srl=3.0, ni=3):
 
 def rms(x):
     return math.sqrt((x * x).sum()) / x.size
-
-# SCRATCH -------------------------------------------------------------------------------
-# import numpy as np
-# import matplotlib.pyplot as plt
-# import cv2
-# import time
-# from scipy import interpolate
-#
-# # tform = np.matrix( np.random.rand(3,3)/10 )
-# # im_warped = fcnimwarp(im, cam['ixy'], tform)
-# # cv2.AffineTransformer.warpImage()
-#
-# from skimage.transform import (warp, warp_coords, rotate, resize, rescale,
-#                                AffineTransform,
-#                                ProjectiveTransform,
-#                                SimilarityTransform,
-#                                downscale_local_mean)
-#
-# x = np.arange(1920 * 1080 * 4, dtype=np.)
-# x = x.reshape(1920 * 2, 1080 * 2)
-#
-# theta = (- np.pi / 2)
-# # tform = AffineTransform(scale=1, rotation=theta, translation=(0, 4))
-# tform = SimilarityTransform(scale=1, rotation=theta, translation=(0, 4))
-#
-# x90 = warp(x, tform, order=1)
-# print(x90 - np.rot90(x))
-#
-# x90 = warp(x, tform.inverse, order=1)
-# x90 - np.rot90(x)
-#
-# imagename = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/IMG_4124.JPG'
-# im = cv2.imread(imagename, 0)
-#
-# tform23 = np.array([[0.95719, 0.010894],
-#                     [-0.035418, 0.89938],
-#                     [-105.34, 49.714]]).T  # 2x3 affine tform
-#
-# tform33 = np.array([[0.95719, 0.010894, 0],
-#                     [-0.035418, 0.89938, 0],
-#                     [-105.34, 49.714, 1]]).T  # 2x3 affine tform
-#
-# tic=time.time(); im_warped1 = cv2.warpAffine(im, tform23, (im.shape[1], im.shape[0])); print(time.time()-tic)
-# tic=time.time(); im_warped2 = warp(im, tform33, order=1); print(time.time()-tic)
-#
-# plt.imshow(im_warped1)
-# cv2.remap()
-# # cv2.convertMaps()
