@@ -10,7 +10,7 @@ def plotresults(cam, im, P, S, B, bbox):
     h, w = im.shape
     n = P.shape[2]  # number of images
     xn = list(range(0, n, 1))
-    colors = bokeh_colors(palettes, n)
+    colors = bokeh_colors(n)
     colorbyframe = True
 
     # Setup tools
@@ -81,20 +81,20 @@ def plotresults(cam, im, P, S, B, bbox):
     io.show(column(a, row(b, c, d)))  # open a browser
 
 
-def bokeh_colors(bkpalettes, n):
+def bokeh_colors(n):
     # https: // bokeh.pydata.org / en / latest / docs / reference / palettes.html
     # returns appropriate 10, 20 or 256 colors for plotting. n is the maximum required colors
     if n < 11:
-        return bkpalettes.Category10[10]
+        return palettes.Category10[10]
     elif n < 21:
-        return bkpalettes.Category20[20]
+        return palettes.Category20[20]
     elif n < 256:
         g = []
         for i in np.linspace(0, 255, n, dtype=int):
-            g.append(bkpalettes.Viridis256[i])
+            g.append(palettes.Viridis256[i])
         return g
     else:
-        return bkpalettes.Viridis256
+        return palettes.Viridis256
 
 
 def imshow(im, im2=None, p1=None, p2=None):
@@ -117,7 +117,7 @@ def imshow(im, im2=None, p1=None, p2=None):
                         active_scroll='wheel_zoom', active_inspect=None)
 
     # Plot image
-    if colorImage:
+    if colorImage:  # RGB
         imc = np.ones((im.shape[0], im.shape[1], 4), dtype=np.uint32) * 255
         imc[:, :, 0:3] = im
 
@@ -131,7 +131,7 @@ def imshow(im, im2=None, p1=None, p2=None):
     p.add_tools(hoverImage)
 
     # Show plot
-    colors = bokeh_colors(palettes, 3)
+    colors = bokeh_colors(3)
     if im2 is None:
         if p1 is not None:
             p.circle(p1[:, 0], p1[:, 1], color=colors[0], line_width=2)

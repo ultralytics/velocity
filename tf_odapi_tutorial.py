@@ -1,49 +1,92 @@
-import time
-import plots
-
+import os, sys, time, cv2, plots
 import numpy as np
-import os
-import six.moves.urllib as urllib
-import sys
-import tarfile
-import tensorflow as tf
-import zipfile
-import cv2
+from plots import bokeh_colors, imshow
 
 
-def main():
+def annotateImage(im, S, source='YOLO'):
+    h, w, ch = im.shape
+    n = len(S)
+    c = bokeh_colors(n)
+    c = [255, 255, 255]
+    thick = round(h * .003)
+    if source is 'YOLO':
+        for i in np.arange(n):
+            a = S[i]
+            left, top = a['topleft']['x'], a['topleft']['y']
+            right, bot = a['bottomright']['x'], a['bottomright']['y']
+            cv2.rectangle(im, (left, top), (right, bot), c, thick * 2)
+            cv2.putText(im, '%s %.0f%%' % (a['label'], a['confidence'] * 100), (left, top - 12), 0, 1e-3 * h, c, thick)
+    return im
+
+
+def mainYOLO():
+    from darkflow.net.build import TFNet
+    path = '/Users/glennjocher/'
+    fname = path + 'Downloads/IMG_4122.JPG'
+    options = {'model': path + 'darkflow/cfg/tiny-yolo-voc.cfg', 'load': path + 'darknet/yolov2-tiny-voc.weights',
+               'threshold': 0.3}
+    options = {'model': path + 'darkflow/cfg/yolo.cfg', 'load': path + 'darkflow/yolo.weights', 'threshold': 0.3}
+    tfnet = TFNet(options)
+
+    # IMAGE
+    im = cv2.imread(fname)  # native BGR
+    tic = time.time()
+    result = tfnet.return_predict(im)  # wants BGR
+    print('Single image complete. %.3f s elapsed.' % (time.time() - tic))
+    im = annotateImage(im, result, source='YOLO')
+    imshow(cv2.cvtColor(im, cv2.COLOR_BGR2RGB))
+
+    # VIDEO
+    fname = path + 'Downloads/DATA/VSM/2018.3.30/IMG_4238.m4v'
+    cap = cv2.VideoCapture(fname)
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+    out = cv2.VideoWriter(fname + '.yolo.avi', cv2.VideoWriter_fourcc(*'MJPG'), fps, (width, height))
+    for i in np.arange(90):
+        success, im = cap.read()  # native BGR
+        if success:
+            tic = time.time()
+            result = tfnet.return_predict(im)  # wants BGR
+            print('Frame %g/%g ... %.3fs.' % (i, frame_count, time.time() - tic))
+            if any(result):
+                im = annotateImage(im, result, source='YOLO')
+            out.write(im)  # wants BGR
+            # imshow(im)
+        else:
+            break
+    cap.release()
+    out.release()
+
+    return None
+    # ./darknet detect cfg/yolov3.cfg yolov3.weights /Users/glennjocher/Downloads/IMG_4122.JPG
+    # ./darknet detect cfg/yolov2-tiny.cfg yolov2-tiny.weights /Users/glennjocher/Downloads/IMG_4122.JPG
+
+
+def mainTF():
+    import tensorflow as tf
     tic = time.time()
 
     # This is needed since the notebook is stored in the object_detection folder.
     TF_PATH = '/Users/glennjocher/tensorflow/models/research/object_detection/'
     sys.path.append('/Users/glennjocher/tensorflow/models/research/object_detection/')
     sys.path.append('/Users/glennjocher/tensorflow/models/research/')
-    sys.path.append("..")
+    sys.path.append('..')
     from object_detection.utils import ops as utils_ops
     from utils import label_map_util
     from utils import visualization_utils as vis_util
 
-    ## Variables
     # What model to download.
-    MODEL_NAME = 'mask_rcnn_inception_v2_coco_2018_01_28'
-    MODEL_NAME = 'faster_rcnn_inception_v2_coco_2018_01_28'
-    MODEL_NAME = 'ssd_inception_v2_coco_2017_11_17'
+    # MODEL_NAME = 'mask_rcnn_inception_v2_coco_2018_01_28'
+    # MODEL_NAME = 'faster_rcnn_inception_v2_coco_2018_01_28'
+    # MODEL_NAME = 'ssd_inception_v2_coco_2017_11_17'
     MODEL_NAME = 'ssd_mobilenet_v1_coco_2017_11_17'
 
     # List of the strings that is used to add correct label for each box.
     NUM_CLASSES = 90
 
-    # ## Download Model
-    # MODEL_FILE = MODEL_NAME + '.tar.gz'
-    # opener = urllib.request.URLopener()
-    # opener.retrieve('http://download.tensorflow.org/models/object_detection/' + MODEL_FILE, MODEL_FILE)
-    # tar_file = tarfile.open(MODEL_FILE)
-    # for file in tar_file.getmembers():
-    #     file_name = os.path.basename(file.name)
-    #     if 'frozen_inference_graph.pb' in file_name:
-    #         tar_file.extract(file, os.getcwd())
-
-    ## Load a (frozen) Tensorflow model into memory.
+    # Load a (frozen) Tensorflow model into memory.
     tfgraph = tf.Graph()
     with tfgraph.as_default():
         od_graph_def = tf.GraphDef()
@@ -52,7 +95,7 @@ def main():
             od_graph_def.ParseFromString(serialized_graph)
             tf.import_graph_def(od_graph_def, name='')
 
-    ## Loading label map
+    # Loading label map
     # Label maps map indices to category names, so that when our convolution network predicts `5`, we know that this
     # corresponds to `airplane`.  Here we use internal utility functions, but
     # anything that returns a dictionary mapping integers to appropriate string labels would be fine
@@ -74,28 +117,28 @@ def main():
                 # Get handles to input and output tensors
                 ops = tf.get_default_graph().get_operations()
                 all_tensor_names = {output.name for op in ops for output in op.outputs}
-                tensor_dict = {}
-                for key in [
-                    'num_detections', 'detection_boxes', 'detection_scores', 'detection_classes', 'detection_masks']:
+                T = {}  # tensor dictionary
+                for key in ['num_detections', 'detection_boxes', 'detection_scores', 'detection_classes',
+                            'detection_masks']:
                     tensor_name = key + ':0'
                     if tensor_name in all_tensor_names:
-                        tensor_dict[key] = tf.get_default_graph().get_tensor_by_name(tensor_name)
-                if 'detection_masks' in tensor_dict:
+                        T[key] = tf.get_default_graph().get_tensor_by_name(tensor_name)
+                if 'detection_masks' in T:
                     # The following processing is only for single im
-                    boxes = tf.squeeze(tensor_dict['detection_boxes'], 0)
-                    masks = tf.squeeze(tensor_dict['detection_masks'], 0)
+                    boxes = tf.squeeze(T['detection_boxes'], 0)
+                    masks = tf.squeeze(T['detection_masks'], 0)
                     # Reframe is required to translate mask from box coordinates to im coordinates and fit the im size.
-                    j = tf.cast(tensor_dict['num_detections'][0], tf.int32)
+                    j = tf.cast(T['num_detections'][0], tf.int32)
                     boxes = tf.slice(boxes, [0, 0], [j, -1])
                     masks = tf.slice(masks, [0, 0, 0], [j, -1, -1])
                     masks_reframed = utils_ops.reframe_box_masks_to_image_masks(masks, boxes, im.shape[0], im.shape[1])
                     masks_reframed = tf.cast(tf.greater(masks_reframed, 0.5), tf.uint8)
                     # Follow the convention by adding back the batch dimension
-                    tensor_dict['detection_masks'] = tf.expand_dims(masks_reframed, 0)
+                    T['detection_masks'] = tf.expand_dims(masks_reframed, 0)
                 image_tensor = tf.get_default_graph().get_tensor_by_name('image_tensor:0')
 
                 # Run inference
-                D = sess.run(tensor_dict, feed_dict={image_tensor: np.expand_dims(im, 0)})
+                D = sess.run(T, feed_dict={image_tensor: np.expand_dims(im, 0)})
 
                 # all outputs are float32 numpy arrays, so convert types as appropriate
                 D['num_detections'] = int(D['num_detections'][0])
@@ -107,24 +150,23 @@ def main():
         return D
 
     for image_path in TEST_IMAGE_PATHS:
-        image_np = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
+        im = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)  # TF wants RGB
 
         # Actual detection.
         tic = time.time()
-        output_dict = run_inference_for_single_image(image_np, tfgraph)
+        D = run_inference_for_single_image(im, tfgraph)
         print('Single image complete. %.1f s elapsed.' % (time.time() - tic))
 
         # Visualization of the results of a detection.
-        vis_util.visualize_boxes_and_labels_on_image_array(
-            image_np,
-            output_dict['detection_boxes'],
-            output_dict['detection_classes'],
-            output_dict['detection_scores'],
-            category_index,
-            instance_masks=output_dict.get('detection_masks'),
-            use_normalized_coordinates=True,
-            line_thickness=6)
-        plots.imshow(image_np)
+        vis_util.visualize_boxes_and_labels_on_image_array(im,
+                                                           D['detection_boxes'],
+                                                           D['detection_classes'],
+                                                           D['detection_scores'],
+                                                           category_index,
+                                                           instance_masks=D.get('detection_masks'),
+                                                           use_normalized_coordinates=True,
+                                                           line_thickness=6)
+        plots.imshow(im)
 
 
-main()
+mainYOLO()

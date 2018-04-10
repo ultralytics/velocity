@@ -99,8 +99,9 @@ def filenamesplit(string):
     i = string.rfind('/') + 1
     path = string[0:i]
     filename = string[i:None]
+    fname_noextension = filename[0:filename.rfind('.')]
     extension = filename[filename.rfind('.'):None]
-    return path, filename, extension
+    return path, filename, extension, fname_noextension
 
 
 # @profile
@@ -368,19 +369,19 @@ def estimatePlatePosition(K, p_im, p_w, t=None, R=None):
     # x0 = np.concatenate([dcm2rpy(R), t])
 
     # Nonlinear Least Squares
-    p_w3 = np.zeros([p_w.shape[0], 3], np.float32)
+    p_w3 = np.zeros([p_w.shape[0], 3], dtype=float)
     p_w3[:, 0:2] = p_w
 
     # if t is None:
-    x0 = np.array([1, 0, 0, 0, 0, 1], np.float32)
+    x0 = np.array([1, 0, 0, 0, 0, 1], dtype=float)
     # else:
     #    rpy = dcm2rpy(R)
     #    x0 = np.float32(np.concatenate((rpy[None],t[None]), axis=1)).ravel()
-    R, t = fcnNLScamera2world(K, p_im, p_w3, x0)
+    R, t = fcnNLScamera2world(K.astype(float), p_im.astype(float), p_w3, x0)
 
     # Residuals
     p_im_projected = world2image(K, R, t, p_w3)
-    residuals = np.sqrt(((p_im_projected - p_im) ** 2).sum(axis=1))
+    residuals = norm(p_im_projected - p_im)
     return t, R, residuals, p_im_projected
 
 
@@ -447,13 +448,9 @@ def fcnNLScamera2world(K, p, p_w, x):
     # p = nx2 image points
     # p_w = nx3 world points
     # p_w = p_w @ cam2ned().T
-    K = K.astype(float)
-    p = p.astype(float)
-    p_w = p_w.astype(float)
-    x = x.astype(float)
-
 
     def fzhat(a, K):
+        # a = np.concatenate((a,np.ones((a.shape[0],1))), axis=1)  # general case with full camMatrix
         zhat = a @ K  # simplify for special case of R=eye(3), t=[0,0,0]
         return (zhat[:, 0:2] / zhat[:, 2:3]).ravel()
 
@@ -461,9 +458,9 @@ def fcnNLScamera2world(K, p, p_w, x):
         zhat = (p_w @ rpy2dcm(x[0:3]) + x[3:6]) @ K
         return (zhat[:, 0:2] / zhat[:, 2:3]).ravel()
 
-    # R = np.eye(3)
-    # t = np.zeros([1, 3])
-    # cam_matrix = np.concatenate([R, t]) @ K
+    R = np.eye(3)
+    t = np.zeros([1, 3])
+    camMatrix = np.concatenate([R, t]) @ K
 
     # https://la.mathworks.com/help/vision/ref/cameramatrix.html
     # Project a world point X onto the image point x with arbitrary scale factor w
@@ -514,7 +511,7 @@ def fcnNLScamera2world(K, p, p_w, x):
     R = quat32rotm(x[0:3])
     t = x[3:6]
     # print('%i steps, residual rms = %.5f' % (i,(z - zhat).mean()))
-    return R, t
+    return R.astype(np.float32), t.astype(np.float32)
 
 
 def rpy2dcm(rpy):

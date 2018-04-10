@@ -1,6 +1,8 @@
 from fcns import *
 import time
 import scipy.io
+import plotly.offline as py  # py.tools.set_credentials_file(username='glenn.jocher', api_key='Hcd6P8v69EAWUrdZDmpU')
+import plotly.graph_objs as go
 
 
 # pip install --upgrade numpy scipy opencv-python exifread bokeh tensorflow
@@ -36,9 +38,9 @@ def vidExamplefcn():
     # Define camera and car information matrices
     proc_tstart = time.time()
     K = cam['IntrinsicMatrix']
-    A = np.zeros([n, 14])  # [xyz, rpy, xyz_ecef, lla, t, number](nx14) camera information
-    B = np.zeros([n, 14])  # [xyz, rpy, xyz_ecef, lla, t, number](nx14) car information
-    S = np.empty([n, 9])  # stats
+    A = np.zeros([n, 14], dtype=np.float32)  # [xyz, rpy, xyz_ecef, lla, t, number](nx14) camera information
+    B = np.zeros([n, 14], dtype=np.float32)  # [xyz, rpy, xyz_ecef, lla, t, number](nx14) car information
+    S = np.empty([n, 9], dtype=np.float32)  # stats
     _ = np.linalg.inv(np.random.rand(3, 3) @ np.random.rand(3, 3))  # for profiling purposes
 
     # Iterate over images
@@ -96,7 +98,7 @@ def vidExamplefcn():
 
             # initialize
             vi = np.empty(p.shape[0], dtype=bool)  # valid points in image i
-            P = np.empty([4, p.shape[0], n])  # KLT [x y valid]
+            P = np.empty([4, p.shape[0], n], dtype=np.float32)  # KLT [x y valid]
             vi[:] = True
             vg = vi  # P[3,] valid points globally
             P[:] = np.nan
@@ -123,6 +125,9 @@ def vidExamplefcn():
         mr = residuals.sum() / residuals.size
         S[i, :] = (i, proc_dt[i], p.shape[0], mr, dt, A[i, 12], dr, r, speed)
         print('%13g%13.3f%13g%13.3f%13.3f%13.3f%13.2f%13.2f%13.1f' % tuple(S[i, :]))
+
+        # plots
+        # py.plot([go.Histogram(x=residuals, nbinsx=30)], filename='basic histogram')
 
         B[i, 0:3] = t  # car xyz
         P[0, vg, i] = p[:, 0]  # x
