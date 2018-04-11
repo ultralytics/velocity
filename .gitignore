@@ -38,6 +38,7 @@ Temporary Items
 .idea/dictionaries
 .html  # Bokeh Plots
 .pg  # TensorFlow Frozen Graphs
+.avi # videos
 
 # Sensitive or high-churn files:
 .idea/**/dataSources/
