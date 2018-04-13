@@ -1,21 +1,11 @@
-# USE LIKE THIS ---------------------------------------------------------
-# import sys, os
-# sys.path.append('/Users/glennjocher/darknet/python/')
-# import darknet as dn
-#
-# net = dn.load_net(b'/Users/glennjocher/darknet/cfg/yolov2-tiny.cfg', b'/Users/glennjocher/darknet/yolov2-tiny.weights', 0)
-# meta = dn.load_meta(b'/Users/glennjocher/darknet/cfg/coco.data')
-#
-# # Darknet
-# r = dn.detect(net, meta, b'/Users/glennjocher/darknet/data/dog.jpg')
-# print(r)
-#
-# # OpenCV
-# r = dn.detect(net, meta, cv2.imread('/Users/glennjocher/darknet/data/dog.jpg'))
-# print(r)
-
+import sys, os, time
 from ctypes import *
 import random
+import numpy as np
+
+# sys.path.append('/Users/glennjocher/darknet/')
+# import darknet as dn
+PATH = '/Users/glennjocher/darknet/'  # local path to cloned darknet repo
 
 
 def sample(probs):
@@ -29,17 +19,6 @@ def sample(probs):
     return len(probs) - 1
 
 
-def array_to_image(arr):
-    arr = arr.transpose(2, 0, 1)
-    c = arr.shape[0]
-    h = arr.shape[1]
-    w = arr.shape[2]
-    arr = (arr / 255.0).flatten()
-    data = c_array(c_float, arr)
-    im = IMAGE(w, h, c, data)
-    return im
-
-
 def c_array(ctype, values):
     arr = (ctype * len(values))()
     arr[:] = values
@@ -47,35 +26,34 @@ def c_array(ctype, values):
 
 
 class BOX(Structure):
-    _fields_ = [("x", c_float),
-                ("y", c_float),
-                ("w", c_float),
-                ("h", c_float)]
+    _fields_ = [('x', c_float),
+                ('y', c_float),
+                ('w', c_float),
+                ('h', c_float)]
 
 
 class DETECTION(Structure):
-    _fields_ = [("bbox", BOX),
-                ("classes", c_int),
-                ("prob", POINTER(c_float)),
-                ("mask", POINTER(c_float)),
-                ("objectness", c_float),
-                ("sort_class", c_int)]
+    _fields_ = [('bbox', BOX),
+                ('classes', c_int),
+                ('prob', POINTER(c_float)),
+                ('mask', POINTER(c_float)),
+                ('objectness', c_float),
+                ('sort_class', c_int)]
 
 
 class IMAGE(Structure):
-    _fields_ = [("w", c_int),
-                ("h", c_int),
-                ("c", c_int),
-                ("data", POINTER(c_float))]
+    _fields_ = [('w', c_int),
+                ('h', c_int),
+                ('c', c_int),
+                ('data', POINTER(c_float))]
 
 
 class METADATA(Structure):
-    _fields_ = [("classes", c_int),
-                ("names", POINTER(c_char_p))]
+    _fields_ = [('classes', c_int),
+                ('names', POINTER(c_char_p))]
 
 
-lib = CDLL("/Users/glennjocher/darknet/libdarknet.so", RTLD_GLOBAL)
-# lib = CDLL("libdarknet.so", RTLD_GLOBAL)
+lib = CDLL(PATH + 'libdarknet.so', RTLD_GLOBAL)
 lib.network_width.argtypes = [c_void_p]
 lib.network_width.restype = c_int
 lib.network_height.argtypes = [c_void_p]
@@ -154,41 +132,77 @@ def classify(net, meta, im):
     return res
 
 
+# @profile
+def array_to_image(arr):
+    # need to return old values to avoid python freeing memory
+    arr = arr.transpose(2, 0, 1)
+    c, h, w = arr.shape[0:3]
+    arr = np.ascontiguousarray(arr.flat, dtype=np.float32) / 255.0
+    data = arr.ctypes.data_as(POINTER(c_float))
+    im = IMAGE(w, h, c, data)
+    return im, arr
+
+
+# @profile
 def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45):
-    if isinstance(image, bytes):  # image is a filename i.e. image = b"/Users/glennjocher/darknet/data/dog.jpg"
+    if isinstance(image, bytes):  # image is a filename i.e. image = b'/Users/glennjocher/darknet/data/dog.jpg'
         im = load_image(image, 0, 0)
-    else:  # image is a numpy array i.e. image = cv2.imread("/Users/glennjocher/darknet/data/dog.jpg")
-        im = array_to_image(image)
+    else:  # image is nparray i.e. image = cv2.imread('/Users/glennjocher/darknet/data/dog.jpg')
+        im, image = array_to_image(image)
         rgbgr_image(im)
     num = c_int(0)
     pnum = pointer(num)
     predict_image(net, im)
     dets = get_network_boxes(net, im.w, im.h, thresh, hier_thresh, None, 0, pnum)
     num = pnum[0]
-    if (nms): do_nms_obj(dets, num, meta.classes, nms);
+    if nms: do_nms_obj(dets, num, meta.classes, nms)
 
+    # Numpy loops
     res = []
     for j in range(num):
-        for i in range(meta.classes):
-            if dets[j].prob[i] > 0:
+        a = np.array(dets[j].prob[0:meta.classes]).nonzero()[0]
+        if a.size > 0:
+            for i in a:
                 b = dets[j].bbox
                 res.append((meta.names[i], dets[j].prob[i], (b.x, b.y, b.w, b.h)))
+
+    # # No-numpy loops (10X slower!)
+    # for j in range(num):
+    #     for i in range(meta.classes):
+    #         if dets[j].prob[i] > 0:
+    #             b = dets[j].bbox
+    #             res.append((meta.names[i], dets[j].prob[i], (b.x, b.y, b.w, b.h)))
+
     res = sorted(res, key=lambda x: -x[1])
     if isinstance(image, bytes): free_image(im)
     free_detections(dets, num)
     return res
 
 
-if __name__ == "__main__":
-    path = "/Users/glennjocher/darknet/"
-    # net = load_net("cfg/densenet201.cfg", "/home/pjreddie/trained/densenet201.weights", 0)
-    # im = load_image("data/wolf.jpg", 0, 0)
-    # meta = load_meta("cfg/imagenet1k.data")
-    # r = classify(net, meta, im)
-    # print r[:10]
+if __name__ == '__main__':
+    import cv2
 
-    net = load_net(bytes(path + "cfg/yolov2-tiny.cfg", encoding="utf-8"),
-                   bytes(path + "yolov2-tiny.weights", encoding="utf-8"), 0)
-    meta = load_meta(bytes(path + "cfg/coco.data", encoding="utf-8"))
-    r = detect(net, meta, bytes(path + "data/dog.jpg", encoding="utf-8"))
-    print(r)
+    bPATH = PATH.encode('utf-8')
+    net = load_net(bPATH + b'cfg/yolov2-tiny.cfg', bPATH + b'yolov2-tiny.weights', 0)
+    meta = load_meta(bPATH + b'cfg/coco.data')
+    # imPATH = PATH + 'data/dog.jpg'
+    imPATH = PATH + '../Downloads/IMG_4122.JPG'
+
+    # Darknet via filename
+    tic = time.time()
+    r = detect(net, meta, imPATH.encode('utf-8'))
+    print('%.3fs darknet with filename\n' % (time.time() - tic))
+
+    # Load image with opencv
+    tic = time.time()
+    image = cv2.imread(imPATH)
+    print('%.3fs load nparray\n' % (time.time() - tic))
+
+    # Darknet via nparray
+    tic = time.time()
+    r = detect(net, meta, image)
+    print('%.3fs darknet with nparray\n' % (time.time() - tic))
+
+    # Darknet from bash
+    # cd darknet
+    # ./darknet detect cfg/yolov2-tiny.cfg yolov2-tiny.weights ../Downloads/IMG_4122.JPG

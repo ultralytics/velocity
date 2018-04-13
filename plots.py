@@ -36,7 +36,7 @@ def plotresults(cam, im, P, S, B, bbox):
     # Plot points
     if colorbyframe:
         # for i in list((0, n - 1)):  # plot first and last
-        for i in np.arange(n):  # plot all
+        for i in range(n):  # plot all
             a.circle(P[0, :, i], P[1, :, i], color=colors[i], legend='image ' + str(i), line_width=1)
             a.circle(P[2, :, i], P[3, :, i], color=colors[i], size=8, alpha=.6)
     else:
@@ -65,7 +65,7 @@ def plotresults(cam, im, P, S, B, bbox):
     # Circles plots 2-4
     b.circle(0, 0, color=colors[-1], line_width=15)
     if colorbyframe:
-        for i in np.arange(n):
+        for i in range(n):
             b.circle(x[i], z[i], color=colors[i], line_width=2)
             c.circle(xn[i], S[i, 7], color=colors[i], line_width=2)
             d.circle(xn[i], S[i, 8], color=colors[i], line_width=2)

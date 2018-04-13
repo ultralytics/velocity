@@ -97,11 +97,11 @@ def filenamesplit(string):
     # filename = 'IMG_4124.JPG'
     # extension = '.JPG'
     i = string.rfind('/') + 1
+    j = string.rfind('.')
     path = string[0:i]
-    filename = string[i:None]
-    fname_noextension = filename[0:filename.rfind('.')]
-    extension = filename[filename.rfind('.'):None]
-    return path, filename, extension, fname_noextension
+    file = string[i:j]
+    extension = string[j:]
+    return path, file, extension, file + extension
 
 
 # @profile
@@ -109,7 +109,7 @@ def getCameraParams(fullfilename, platform='iPhone 6s'):
     # returns camera parameters and file information structure cam
     # fullfilename: video or image(s) file name(s) i.e. mymovie.mov or IMG_3797.jpg
     # platform: camera name i.e. 'iPhone 6s'
-    pathname, filename, extension = filenamesplit(fullfilename)
+    pathname, _, extension, filename = filenamesplit(fullfilename)
     isvideo = (extension == '.MOV') | (extension == '.mov') | (extension == '.m4v')
 
     if platform == 'iPhone 6s':
@@ -385,6 +385,12 @@ def estimatePlatePosition(K, p_im, p_w, t=None, R=None):
     return t, R, residuals, p_im_projected
 
 
+def image2world3(R, t, p):
+    p3 = np.ones([p.shape[0], 3], np.float32)
+    p3[:, 0:2] = p
+    return p3 @ R + t
+
+
 def image2world(K, R, t, p):
     # Copy of MATLAB function pointsToworld
     tform = np.concatenate([R[0:2, :], t[None]]) @ K
@@ -478,7 +484,7 @@ def fcnNLScamera2world(K, p, p_w, x):
     max_iter = 100
     mdm = np.diag(np.eye(6) * 1)  # marquardt damping matrix (eye times damping coeficient)
     # jfunc = jacobian(fzhat0)
-    for i in np.arange(max_iter):
+    for i in range(max_iter):
         x03 = x[0:3]
         x36 = x[3:6]
         a0 = p_w @ quat32rotm(x03)
@@ -560,7 +566,7 @@ def fcnsigmarejection(x, srl=3.0, ni=3):
     v = np.empty_like(x, dtype=bool)
     v[:] = True
     x = x.ravel()
-    for m in np.arange(ni):
+    for m in range(ni):
         s = x.std() * srl
         mu = x.mean()
         vi = (x < mu + s) & (x > mu - s)

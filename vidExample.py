@@ -10,7 +10,7 @@ import plotly.graph_objs as go
 
 # @profile
 def vidExamplefcn():
-    # import plots
+    import plots
 
     n = 10  # number of frames to read
     isVideo = True
@@ -93,7 +93,7 @@ def vidExamplefcn():
             # p = scipy.io.loadmat('/Users/glennjocher/Documents/PyCharmProjects/Velocity/data/pc_v7.mat')['pc']
             p = np.concatenate((q, p), axis=0)
             t, R, residuals, p_ = estimatePlatePosition(K, p[0:4, :], worldPointsLicensePlate())
-            p_w = image2world(K, R, t, p)
+            p_w2 = image2world(K, R, t, p)
             p_ = p
 
             # initialize
@@ -104,18 +104,20 @@ def vidExamplefcn():
             P[:] = np.nan
             imfirst, dt, dr, r, speed = im, 0, 0, 0, 0
             im0_small = cv2.resize(im, (0, 0), fx=1 / 4, fy=1 / 4, interpolation=cv2.INTER_NEAREST)
+
         else:
             # update
             p, vi, im0_small = KLTwarp(im, im0, im0_small, p0)
-            p_w = p_w[vi]
+            p_w2 = p_w2[vi]
             p = p[vi]
             vg[vg] = vi
 
             # Get plate position
-            t, R, residuals, p_ = estimatePlatePosition(K, p, p_w, t, R)
+            t, R, residuals, p_ = estimatePlatePosition(K, p, p_w2, t, R)
 
             dt = A[i, 12] - A[i - 1, 12]
             dr = norm(t - B[i - 1, 0:3])
+
             r += dr
             speed = dr / dt * 3.6  # m/s to km/h
             del im0
@@ -144,7 +146,7 @@ def vidExamplefcn():
     print('Residuals = %.3f +/- %.3f pixels' % (S[1:, 3].mean(), S[1:, 3].std()))
     print('Processed %g images: %s in %.2fs (%.2ffps)\n' % (n, frames[:], dta, n / dta))
 
-    # plots.plotresults(cam, im // 2 + imfirst // 2, P, S, B, bbox=bbox)  # // is integer division
+    plots.plotresults(cam, im // 2 + imfirst // 2, P, S, B, bbox=bbox)  # // is integer division
 
 
 vidExamplefcn()

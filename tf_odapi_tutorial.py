@@ -3,55 +3,97 @@ import numpy as np
 from plots import bokeh_colors, imshow
 
 
-def annotateImage(im, S, source='YOLO'):
+def annotateImageDF(im, S):
     h, w, ch = im.shape
     n = len(S)
     c = bokeh_colors(n)
     c = [255, 255, 255]
     thick = round(h * .003)
-    if source is 'YOLO':
-        for i in np.arange(n):
-            a = S[i]
-            left, top = a['topleft']['x'], a['topleft']['y']
-            right, bot = a['bottomright']['x'], a['bottomright']['y']
-            cv2.rectangle(im, (left, top), (right, bot), c, thick * 2)
-            cv2.putText(im, '%s %.0f%%' % (a['label'], a['confidence'] * 100), (left, top - 12), 0, 1e-3 * h, c, thick)
+    for i in range(n):
+        a = S[i]
+        left, top = a['topleft']['x'], a['topleft']['y']
+        right, bot = a['bottomright']['x'], a['bottomright']['y']
+        cv2.rectangle(im, (left, top), (right, bot), c, thick * 2)
+        cv2.putText(im, 'df %s %.0f%%' % (a['label'], a['confidence'] * 100), (left, top - 12), 0, 1e-3 * h, c, thick)
+    return im
+
+
+def annotateImageDN(im, r):
+    h, w, ch = im.shape
+    n = len(r)
+    c = bokeh_colors(n)
+    c = [0, 128, 255]  # orange
+    thick = round(h * .003)
+    for i in range(n):
+        a = r[i]
+        b = a[2]
+        left, top = int(b[0] - b[2] / 2), int(b[1] - b[3] / 2)
+        right, bot = int(b[0] + b[2] / 2), int(b[1] + b[3] / 2)
+        cv2.rectangle(im, (left, top), (right, bot), c, thick * 2)
+        cv2.putText(im, 'dn %s %.0f%%' % (a[0].decode('utf-8'), a[1] * 100), (left, top - 12), 0, 1e-3 * h, c, thick)
     return im
 
 
 def mainYOLO():
+    PATH = '/Users/glennjocher/darknet/'  # local path to cloned darknet repo
+    bPATH = PATH.encode('utf-8')
+    sys.path.append(PATH)
+
+    # Darkflow
     from darkflow.net.build import TFNet
-    path = '/Users/glennjocher/'
-    fname = path + 'Downloads/IMG_4122.JPG'
-    options = {'model': path + 'darkflow/cfg/tiny-yolo-voc.cfg', 'load': path + 'darknet/yolov2-tiny-voc.weights',
-               'threshold': 0.3}
-    options = {'model': path + 'darkflow/cfg/yolo.cfg', 'load': path + 'darkflow/yolo.weights', 'threshold': 0.3}
+    options = {'model': PATH + 'cfg/yolov2-tiny.cfg', 'load': PATH + 'yolov2-tiny.weights', 'threshold': 0.6}
     tfnet = TFNet(options)
+    # yolov2.224: 143ms
+    # yolov2.320: 240ms
+    # yolov2.416: 395ms
+    # yolov2-tiny.224: 43ms
+    # yolov2-tiny.416: 130ms
+
+    # Darknet
+    import darknet as dn
+    net = dn.load_net(bPATH + b'cfg/yolov2-tiny.cfg', bPATH + b'yolov2-tiny.weights', 0)
+    meta = dn.load_meta(bPATH + b'cfg/coco.data')
 
     # IMAGE
+    fname = PATH + '../Downloads/IMG_4122.JPG'
     im = cv2.imread(fname)  # native BGR
+
     tic = time.time()
-    result = tfnet.return_predict(im)  # wants BGR
-    print('Single image complete. %.3f s elapsed.' % (time.time() - tic))
-    im = annotateImage(im, result, source='YOLO')
+    rf = tfnet.return_predict(im)  # wants BGR
+    print('%.3fs darkflow\n%s' % (time.time() - tic, rf))
+
+    tic = time.time()
+    rn = dn.detect(net, meta, im)
+    print('%.3fs darknet\n%s' % (time.time() - tic, rn))
+
+    im = annotateImageDF(im, rf)
+    im = annotateImageDN(im, rn)
+
     imshow(cv2.cvtColor(im, cv2.COLOR_BGR2RGB))
+    cv2.imwrite(fname + '.yolo.jpg', im)
 
     # VIDEO
-    fname = path + 'Downloads/DATA/VSM/2018.3.30/IMG_4238.m4v'
+    fname = PATH + '../Downloads/DATA/VSM/2018.3.30/IMG_4238.m4v'
     cap = cv2.VideoCapture(fname)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = cap.get(cv2.CAP_PROP_FPS)
     frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-    out = cv2.VideoWriter(fname + '.yolo.avi', cv2.VideoWriter_fourcc(*'MJPG'), fps, (width, height))
-    for i in np.arange(90):
+    out = cv2.VideoWriter(fname + '.yolo.mov', cv2.VideoWriter_fourcc(*'avc1'), fps, (width, height))
+
+    for i in range(30):
         success, im = cap.read()  # native BGR
         if success:
             tic = time.time()
-            result = tfnet.return_predict(im)  # wants BGR
-            print('Frame %g/%g ... %.3fs.' % (i, frame_count, time.time() - tic))
-            if any(result):
-                im = annotateImage(im, result, source='YOLO')
+            rf = tfnet.return_predict(im)  # wants BGR
+            print('Frame %g/%g darkflow... %.3fs.' % (i, frame_count, time.time() - tic))
+            if any(rf): im = annotateImageDF(im, rf)
+
+            tic = time.time()
+            rn = dn.detect(net, meta, im)
+            print('Frame %g/%g darknet... %.3fs.' % (i, frame_count, time.time() - tic))
+            if any(rn): im = annotateImageDN(im, rn)
+
             out.write(im)  # wants BGR
             # imshow(im)
         else:
@@ -70,10 +112,9 @@ def mainTF():
 
     # This is needed since the notebook is stored in the object_detection folder.
     TF_PATH = '/Users/glennjocher/tensorflow/models/research/object_detection/'
-    sys.path.append('/Users/glennjocher/tensorflow/models/research/object_detection/')
+    sys.path.append(TF_PATH)
     sys.path.append('/Users/glennjocher/tensorflow/models/research/')
-    sys.path.append('..')
-    from object_detection.utils import ops as utils_ops
+    from utils import ops as utils_ops
     from utils import label_map_util
     from utils import visualization_utils as vis_util
 
@@ -107,8 +148,9 @@ def mainTF():
     # Detection
     # image1.jpg
     # image2.jpg
-    TEST_IMAGE_PATHS = [os.path.join(TF_PATH + 'test_images/', 'image{}.jpg'.format(i)) for i in range(1, 3)]
-    TEST_IMAGE_PATHS = ['/Users/glennjocher/Downloads/taya.jpg', '/Users/glennjocher/Downloads/IMG_4122.JPG']
+    # TEST_IMAGE_PATHS = [os.path.join(TF_PATH + 'test_images/', 'image{}.jpg'.format(i)) for i in range(1, 3)]
+    # TEST_IMAGE_PATHS = ['/Users/glennjocher/Downloads/taya.jpg', '/Users/glennjocher/Downloads/IMG_4122.JPG']
+    TEST_IMAGE_PATHS = ['/Users/glennjocher/Downloads/taya_japan.jpg']
     print('Loaded TF. %.1f s elapsed.' % (time.time() - tic))
 
     def run_inference_for_single_image(im, graph):
