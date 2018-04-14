@@ -13,7 +13,7 @@ def annotateImageDF(im, r):
         left, top = a['topleft']['x'], a['topleft']['y']
         right, bot = a['bottomright']['x'], a['bottomright']['y']
         cv2.rectangle(im, (left, top), (right, bot), c, thick + 2)
-        cv2.putText(im, 'darkflow %s %.0f%%' % (a['label'], a['confidence'] * 100), (left, top - round(h * .01)),
+        cv2.putText(im, 'df %s %.0f%%' % (a['label'], a['confidence'] * 100), (left, top - round(h * .01)),
                     0, 1e-3 * h, c, thick, lineType=cv2.LINE_AA)
     return im
 
@@ -30,7 +30,7 @@ def annotateImageDN(im, r):
         left, top = int(b[0] - b[2] / 2), int(b[1] - b[3] / 2)
         right, bot = int(b[0] + b[2] / 2), int(b[1] + b[3] / 2)
         cv2.rectangle(im, (left, top), (right, bot), c, thick + 2)
-        cv2.putText(im, 'darknet %s %.0f%%' % (a[0].decode('utf-8'), a[1] * 100), (left, top - round(h * .01)),
+        cv2.putText(im, 'dn %s %.0f%%' % (a[0].decode('utf-8'), a[1] * 100), (left, top - round(h * .01)),
                     0, 1e-3 * h, c, thick, lineType=cv2.LINE_AA)
     return im
 
@@ -42,7 +42,7 @@ def mainYOLO():
 
     # Darkflow
     from darkflow.net.build import TFNet
-    options = {'model': PATH + 'cfg/yolov2.cfg', 'load': PATH + 'yolov2.weights', 'threshold': 0.6}
+    options = {'model': PATH + 'cfg/yolov2-tiny.cfg', 'load': PATH + 'yolov2-tiny.weights', 'threshold': 0.6}
     tfnet = TFNet(options)
     # yolov2.224: 143ms
     # yolov2.320: 240ms
@@ -73,9 +73,11 @@ def mainYOLO():
 
     plots.imshow(cv2.cvtColor(im, cv2.COLOR_BGR2RGB))
     cv2.imwrite(fname + '.yolo.jpg', im)
+    return
 
     # VIDEO
     fname = PATH + '../Downloads/DATA/VSM/2018.3.30/IMG_4238.m4v'
+    fname = PATH + '../Downloads/monkeys.MP4'
     cap = cv2.VideoCapture(fname)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -83,7 +85,7 @@ def mainYOLO():
     frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
     out = cv2.VideoWriter(fname + '.yolo.mov', cv2.VideoWriter_fourcc(*'avc1'), fps, (width, height))
 
-    for i in range(60):
+    for i in range(30 * 26):
         success, im = cap.read()  # native BGR
         if success:
             tic = time.time()
@@ -152,8 +154,8 @@ def mainTF():
     # image2.jpg
     # TEST_IMAGE_PATHS = [os.path.join(TF_PATH + 'test_images/', 'image{}.jpg'.format(i)) for i in range(1, 3)]
     # TEST_IMAGE_PATHS = ['/Users/glennjocher/Downloads/taya.jpg', '/Users/glennjocher/Downloads/IMG_4122.JPG']
-    TEST_IMAGE_PATHS = ['/Users/glennjocher/Downloads/taya_japan.jpg']
-    print('Loaded TF. %.1f s elapsed.' % (time.time() - tic))
+    TEST_IMAGE_PATHS = ['/Users/glennjocher/Downloads/taya_japan.jpg', '/Users/glennjocher/Downloads/taya_japan.jpg']
+    print('\nLoading TF... %.1fs' % (time.time() - tic))
 
     def run_inference_for_single_image(im, graph):
         with graph.as_default():
@@ -182,15 +184,19 @@ def mainTF():
                 image_tensor = tf.get_default_graph().get_tensor_by_name('image_tensor:0')
 
                 # Run inference
-                D = sess.run(T, feed_dict={image_tensor: np.expand_dims(im, 0)})
+                tic = time.time()
+                I = np.empty((1, im.shape[0], im.shape[1], 3), np.uint8)
+                for i in range(I.shape[0]):
+                    I[i] = im
+                # im = np.expand_dims(im, 0)
+                D = sess.run(T, feed_dict={image_tensor: I})
+                print('Inference... %.1fs' % (time.time() - tic))
 
                 # all outputs are float32 numpy arrays, so convert types as appropriate
-                D['num_detections'] = int(D['num_detections'][0])
-                D['detection_classes'] = D['detection_classes'][0].astype(np.uint8)
-                D['detection_boxes'] = D['detection_boxes'][0]
-                D['detection_scores'] = D['detection_scores'][0]
-                if 'detection_masks' in D:
-                    D['detection_masks'] = D['detection_masks'][0]
+                for key in D:
+                    D[key] = D[key][0]
+                D['num_detections'] = int(D['num_detections'])
+                D['detection_classes'] = D['detection_classes'].astype(np.uint8)
         return D
 
     for image_path in TEST_IMAGE_PATHS:
@@ -199,7 +205,7 @@ def mainTF():
         # Actual detection.
         tic = time.time()
         D = run_inference_for_single_image(im, tfgraph)
-        print('Single image complete. %.1f s elapsed.' % (time.time() - tic))
+        print('Single image complete... %.1fs\n' % (time.time() - tic))
 
         # Visualization of the results of a detection.
         vis_util.visualize_boxes_and_labels_on_image_array(im,
@@ -209,8 +215,8 @@ def mainTF():
                                                            category_index,
                                                            instance_masks=D.get('detection_masks'),
                                                            use_normalized_coordinates=True,
-                                                           line_thickness=6)
+                                                           line_thickness=8)
         plots.imshow(im)
 
 
-mainYOLO()
+mainTF()
