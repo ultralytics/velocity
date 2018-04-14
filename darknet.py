@@ -160,9 +160,10 @@ def detect(net, meta, image, thresh=.5, hier_thresh=.5, nms=.45):
     # Numpy loops
     res = []
     for j in range(num):
-        a = np.array(dets[j].prob[0:meta.classes]).nonzero()[0]
-        if a.size > 0:
-            for i in a:
+        a = dets[j].prob[0:meta.classes]
+        if any(a):
+            ai = np.array(a).nonzero()[0]
+            for i in ai:
                 b = dets[j].bbox
                 res.append((meta.names[i], dets[j].prob[i], (b.x, b.y, b.w, b.h)))
 
@@ -201,7 +202,7 @@ if __name__ == '__main__':
     # Darknet via nparray
     tic = time.time()
     r = detect(net, meta, image)
-    print('%.3fs darknet with nparray\n' % (time.time() - tic))
+    print('%.3fs darknet with nparray\n%s' % (time.time() - tic, r))
 
     # Darknet from bash
     # cd darknet

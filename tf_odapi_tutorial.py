@@ -1,36 +1,37 @@
 import os, sys, time, cv2, plots
 import numpy as np
-from plots import bokeh_colors, imshow
 
 
-def annotateImageDF(im, S):
+def annotateImageDF(im, r):
     h, w, ch = im.shape
-    n = len(S)
-    c = bokeh_colors(n)
-    c = [255, 255, 255]
+    n = len(r)
     thick = round(h * .003)
+
+    c = [255, 255, 255]
     for i in range(n):
-        a = S[i]
+        a = r[i]
         left, top = a['topleft']['x'], a['topleft']['y']
         right, bot = a['bottomright']['x'], a['bottomright']['y']
-        cv2.rectangle(im, (left, top), (right, bot), c, thick * 2)
-        cv2.putText(im, 'df %s %.0f%%' % (a['label'], a['confidence'] * 100), (left, top - 12), 0, 1e-3 * h, c, thick)
+        cv2.rectangle(im, (left, top), (right, bot), c, thick + 2)
+        cv2.putText(im, 'darkflow %s %.0f%%' % (a['label'], a['confidence'] * 100), (left, top - round(h * .01)),
+                    0, 1e-3 * h, c, thick, lineType=cv2.LINE_AA)
     return im
 
 
 def annotateImageDN(im, r):
     h, w, ch = im.shape
     n = len(r)
-    c = bokeh_colors(n)
-    c = [0, 128, 255]  # orange
     thick = round(h * .003)
+
+    c = [0, 0, 0]  # orange
     for i in range(n):
         a = r[i]
         b = a[2]
         left, top = int(b[0] - b[2] / 2), int(b[1] - b[3] / 2)
         right, bot = int(b[0] + b[2] / 2), int(b[1] + b[3] / 2)
-        cv2.rectangle(im, (left, top), (right, bot), c, thick * 2)
-        cv2.putText(im, 'dn %s %.0f%%' % (a[0].decode('utf-8'), a[1] * 100), (left, top - 12), 0, 1e-3 * h, c, thick)
+        cv2.rectangle(im, (left, top), (right, bot), c, thick + 2)
+        cv2.putText(im, 'darknet %s %.0f%%' % (a[0].decode('utf-8'), a[1] * 100), (left, top - round(h * .01)),
+                    0, 1e-3 * h, c, thick, lineType=cv2.LINE_AA)
     return im
 
 
@@ -41,7 +42,7 @@ def mainYOLO():
 
     # Darkflow
     from darkflow.net.build import TFNet
-    options = {'model': PATH + 'cfg/yolov2-tiny.cfg', 'load': PATH + 'yolov2-tiny.weights', 'threshold': 0.6}
+    options = {'model': PATH + 'cfg/yolov2.cfg', 'load': PATH + 'yolov2.weights', 'threshold': 0.6}
     tfnet = TFNet(options)
     # yolov2.224: 143ms
     # yolov2.320: 240ms
@@ -55,7 +56,8 @@ def mainYOLO():
     meta = dn.load_meta(bPATH + b'cfg/coco.data')
 
     # IMAGE
-    fname = PATH + '../Downloads/IMG_4122.JPG'
+    # fname = PATH + '../Downloads/IMG_4122.JPG'
+    fname = PATH + 'data/dog.jpg'
     im = cv2.imread(fname)  # native BGR
 
     tic = time.time()
@@ -69,7 +71,7 @@ def mainYOLO():
     im = annotateImageDF(im, rf)
     im = annotateImageDN(im, rn)
 
-    imshow(cv2.cvtColor(im, cv2.COLOR_BGR2RGB))
+    plots.imshow(cv2.cvtColor(im, cv2.COLOR_BGR2RGB))
     cv2.imwrite(fname + '.yolo.jpg', im)
 
     # VIDEO
@@ -81,7 +83,7 @@ def mainYOLO():
     frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
     out = cv2.VideoWriter(fname + '.yolo.mov', cv2.VideoWriter_fourcc(*'avc1'), fps, (width, height))
 
-    for i in range(30):
+    for i in range(60):
         success, im = cap.read()  # native BGR
         if success:
             tic = time.time()
@@ -89,13 +91,13 @@ def mainYOLO():
             print('Frame %g/%g darkflow... %.3fs.' % (i, frame_count, time.time() - tic))
             if any(rf): im = annotateImageDF(im, rf)
 
-            tic = time.time()
-            rn = dn.detect(net, meta, im)
-            print('Frame %g/%g darknet... %.3fs.' % (i, frame_count, time.time() - tic))
-            if any(rn): im = annotateImageDN(im, rn)
+            # tic = time.time()
+            # rn = dn.detect(net, meta, im)
+            # print('Frame %g/%g darknet... %.3fs.' % (i, frame_count, time.time() - tic))
+            # if any(rn): im = annotateImageDN(im, rn)
 
             out.write(im)  # wants BGR
-            # imshow(im)
+            # plots.imshow(im)
         else:
             break
     cap.release()
