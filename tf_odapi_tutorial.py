@@ -2,6 +2,13 @@ import os, sys, time, cv2, plots
 import numpy as np
 
 
+def annotateImageSpeed(im, str):
+    h = im.shape[0]
+    thick = round(h * .002)
+    cv2.putText(im, str, (0, round(.05 * h)), 0, round(.001 * h), [255, 255, 255], thick, lineType=cv2.LINE_AA)
+    return im
+
+
 def annotateImageDF(im, r):
     h, w, ch = im.shape
     n = len(r)
@@ -37,12 +44,14 @@ def annotateImageDN(im, r):
 
 def mainYOLO():
     PATH = '/Users/glennjocher/darknet/'  # local path to cloned darknet repo
-    bPATH = PATH.encode('utf-8')
+    model = 'yolov2-tiny'
+    cfgPATH = PATH + 'cfg/' + model + '.cfg'
+    weightsPATH = PATH + model + '.weights'
     sys.path.append(PATH)
 
     # Darkflow
     from darkflow.net.build import TFNet
-    options = {'model': PATH + 'cfg/yolov2-tiny.cfg', 'load': PATH + 'yolov2-tiny.weights', 'threshold': 0.6}
+    options = {'model': cfgPATH, 'load': weightsPATH, 'threshold': 0.6}
     tfnet = TFNet(options)
     # yolov2.224: 143ms
     # yolov2.320: 240ms
@@ -52,50 +61,59 @@ def mainYOLO():
 
     # Darknet
     import darknet as dn
-    net = dn.load_net(bPATH + b'cfg/yolov2-tiny.cfg', bPATH + b'yolov2-tiny.weights', 0)
-    meta = dn.load_meta(bPATH + b'cfg/coco.data')
+    net = dn.load_net(cfgPATH.encode('utf-8'), weightsPATH.encode('utf-8'), 0)
+    meta = dn.load_meta(PATH.encode('utf-8') + b'cfg/coco.data')
 
-    # IMAGE
-    # fname = PATH + '../Downloads/IMG_4122.JPG'
-    fname = PATH + 'data/dog.jpg'
-    im = cv2.imread(fname)  # native BGR
-
-    tic = time.time()
-    rf = tfnet.return_predict(im)  # wants BGR
-    print('%.3fs darkflow\n%s' % (time.time() - tic, rf))
-
-    tic = time.time()
-    rn = dn.detect(net, meta, im)
-    print('%.3fs darknet\n%s' % (time.time() - tic, rn))
-
-    im = annotateImageDF(im, rf)
-    im = annotateImageDN(im, rn)
-
-    plots.imshow(cv2.cvtColor(im, cv2.COLOR_BGR2RGB))
-    cv2.imwrite(fname + '.yolo.jpg', im)
-    return
+    # # IMAGE
+    # # fname = PATH + '../Downloads/IMG_4122.JPG'
+    # fname = PATH + 'data/dog.jpg'
+    # im = cv2.imread(fname)  # native BGR
+    #
+    # tic = time.time()
+    # rf = tfnet.return_predict(im)  # wants BGR
+    # print('%.3fs darkflow\n%s' % (time.time() - tic, rf))
+    #
+    # tic = time.time()
+    # rn = dn.detect(net, meta, im)
+    # print('%.3fs darknet\n%s' % (time.time() - tic, rn))
+    #
+    # im = annotateImageDF(im, rf)
+    # im = annotateImageDN(im, rn)
+    #
+    # plots.imshow(cv2.cvtColor(im, cv2.COLOR_BGR2RGB))
+    # cv2.imwrite(fname + '.yolo.jpg', im)
+    # # return
 
     # VIDEO
-    # fname = PATH + '../Downloads/DATA/VSM/2018.3.30/IMG_4238.m4v'
+    fname = PATH + '../Downloads/DATA/VSM/2018.3.4/IMG_3930.MOV'
     cap = cv2.VideoCapture(fname)
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    scale = 1 / 4
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) * scale)
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) * scale)
     fps = cap.get(cv2.CAP_PROP_FPS)
-    nframes = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-    out = cv2.VideoWriter(fname + '.yolo.mov', cv2.VideoWriter_fourcc(*'avc1'), fps, (width, height))
+    nframes = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    out = cv2.VideoWriter(fname[:-3] + model + str(scale) + '.416.mov', cv2.VideoWriter_fourcc(*'avc1'), fps,
+                          (width, height))
 
-    for i in range(30 * 26):
+    dt = np.zeros((nframes, 2))
+    for i in range(30 * 2):
         success, im = cap.read()  # native BGR
         if success:
+            im = cv2.resize(im, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
+
             tic = time.time()
             rf = tfnet.return_predict(im)  # wants BGR
-            print('Frame %g/%g darkflow... %.3fs.' % (i, nframes, time.time() - tic))
+            dt[i, 0] = time.time() - tic
+            s = '%s %5.3fs (mean %5.3fs)' % ('darkflow', dt[i, 0], dt[min(i, 1):i + 1, 0].mean())
+            print('%g/%g %s' % (i, nframes, s))
             if any(rf): im = annotateImageDF(im, rf)
 
-            # tic = time.time()
-            # rn = dn.detect(net, meta, im)
-            # print('Frame %g/%g darknet... %.3fs.' % (i, nframes, time.time() - tic))
-            # if any(rn): im = annotateImageDN(im, rn)
+            tic = time.time()
+            rn = dn.detect(net, meta, im)
+            dt[i, 1] = time.time() - tic
+            s = '%s %5.3fs (mean %5.3fs)' % ('darknet', dt[i, 1], dt[min(i, 1):i + 1, 1].mean())
+            print('%g/%g %s' % (i, nframes, s))
+            if any(rn): im = annotateImageDN(im, rn)
 
             out.write(im)  # wants BGR
             # plots.imshow(im)
@@ -104,21 +122,22 @@ def mainYOLO():
     cap.release()
     out.release()
 
-    return None
+    return
     # ./darknet detect cfg/yolov3.cfg yolov3.weights /Users/glennjocher/Downloads/IMG_4122.JPG
     # ./darknet detect cfg/yolov2-tiny.cfg yolov2-tiny.weights /Users/glennjocher/Downloads/IMG_4122.JPG
 
 
-def mainTF():
+def mainTF(MODEL_NAME, mname):
     tic = time.time()
     import tensorflow as tf
     print('\nimport tensorflow as tf... %.1fs' % (time.time() - tic))
 
-    # What model to download.
-    # MODEL_NAME = 'mask_rcnn_inception_v2_coco_2018_01_28'
-    # MODEL_NAME = 'faster_rcnn_inception_v2_coco_2018_01_28'
-    # MODEL_NAME = 'ssd_inception_v2_coco_2017_11_17'
-    MODEL_NAME = 'ssd_mobilenet_v1_coco_2017_11_17'
+    # MODEL_NAME, mname = 'data/mask_rcnn_inception_v2_coco_2018_01_28', 'mask_rcnn_inception_'
+    # MODEL_NAME, mname = 'data/faster_rcnn_inception_v2_coco_2018_01_28', 'faster_rcnn_inception_'
+    # MODEL_NAME, mname = 'data/rfcn_resnet101_coco_2018_01_28', 'rfcn_resnet101_'
+    # MODEL_NAME, mname = 'data/ssd_inception_v2_coco_2017_11_17', 'ssd_inception_'
+    # MODEL_NAME, mname = 'data/ssd_mobilenet_v1_coco_2017_11_17', 'ssd_mobilenetv1_'
+    # MODEL_NAME, mname = 'data/ssd_mobilenet_v2_coco_2018_03_29', 'ssd_mobilenetv2_'
 
     tic = time.time()
     PATH = '/Users/glennjocher/'  # local path to cloned darknet repo
@@ -129,25 +148,7 @@ def mainTF():
     from utils import label_map_util
     from utils import visualization_utils as vis_util
 
-    def run_inference(im, T, sess, image_tensor):
-        # Run inference
-        # I = np.empty((30, im.shape[0], im.shape[1], 3), np.uint8)
-        # for i in range(I.shape[0]):
-        # I[i] = im
-        I = np.expand_dims(im, 0)
-        D = sess.run(T, feed_dict={image_tensor: I})
-
-        # all outputs are float32 numpy arrays, so convert types as appropriate
-        for key in D:
-            D[key] = D[key][0]
-        D['num_detections'] = int(D['num_detections'])
-        D['detection_classes'] = D['detection_classes'].astype(np.uint8)
-        return D
-
     # Loading label map
-    # Label maps map indices to category names, so that when our convolution network predicts `5`, we know that this
-    # corresponds to `airplane`.  Here we use internal utility functions, but
-    # anything that returns a dictionary mapping integers to appropriate string labels would be fine
     label_map = label_map_util.load_labelmap(tfPATH + 'data/mscoco_label_map.pbtxt')
     categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=label_map.__sizeof__(),
                                                                 use_display_name=True)
@@ -169,7 +170,7 @@ def mainTF():
         if tensor_name in all_tensor_names:
             T[key] = tf.get_default_graph().get_tensor_by_name(tensor_name)
     image_tensor = tf.get_default_graph().get_tensor_by_name('image_tensor:0')
-    print('Load model into memory... %.1fs' % (time.time() - tic))
+    print('Load tfmodel into memory... %.1fs' % (time.time() - tic))
 
     # Start session
     sess = tf.Session()
@@ -195,46 +196,46 @@ def mainTF():
     #
     #     # Actual detection.
     #     tic = time.time()
-    #     D = run_inference(im, U, sess, image_tensor)
+    #     D = sess.run(T, feed_dict={image_tensor: np.expand_dims(im, 0)})
     #     print('Inference... %.3fs' % (time.time() - tic))
     #
-    #     # Visualization of the results of a detection.
-    #     vis_util.visualize_boxes_and_labels_on_image_array(im, D['detection_boxes'], D['detection_classes'],
-    #                                                        D['detection_scores'], category_index,
+    #     # Visualize
+    #     vis_util.visualize_boxes_and_labels_on_image_array(im, D['detection_boxes'][0],
+    #                                                        D['detection_classes'][0].astype(np.uint8),
+    #                                                        D['detection_scores'][0], category_index,
     #                                                        instance_masks=D.get('detection_masks'),
     #                                                        use_normalized_coordinates=True, line_thickness=8)
     #     plots.imshow(im)
 
     # VIDEO
-    fname = PATH + 'Downloads/DATA/VSM/2018.3.30/IMG_4239.m4v'
+    fname = PATH + 'Downloads/DATA/VSM/2018.3.4/IMG_3930.MOV'
     cap = cv2.VideoCapture(fname)
-    scale = 1 / 1
+    scale = 1 / 4
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) * scale)
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) * scale)
     fps = cap.get(cv2.CAP_PROP_FPS)
     nframes = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-    out = cv2.VideoWriter(fname + '.junk.mov', cv2.VideoWriter_fourcc(*'avc1'), fps, (width, height))
+    mname += str(scale)
+    out = cv2.VideoWriter(fname[:-3] + mname + '.mov', cv2.VideoWriter_fourcc(*'avc1'), fps, (width, height))
 
-    mode = 'perframe'
+    mode = 'perFrame'
     tic0 = time.time()
-    nframes = 120
-    if mode == 'chunks':
-        # load frames into memory
+    nframes = 30 * 4
+    dt = np.zeros(nframes)
+    if mode == 'allAtOnce':
         tic = time.time()
         IM = np.empty((nframes, height, width, 3), dtype=np.uint8)
         for i in range(nframes):
             success, im = cap.read()  # native BGR
             if success:
-                im = cv2.resize(im, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
-                IM[i] = im
+                IM[i] = cv2.resize(im, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
             else:
                 break
-        print('Reading %s frames all at once... %.3fs' % (nframes, time.time() - tic))
+        print('Reading %s frames all at once... %.3fs mean' % (nframes, (time.time() - tic) / nframes))
 
-        # Actual detection.
         tic = time.time()
         D = sess.run(T, feed_dict={image_tensor: np.flip(IM, axis=3)})  # TF wants RGB
-        print('Inference... %.3fs.' % (time.time() - tic))
+        print('Inference... %.3fs mean' % ((time.time() - tic) / nframes))
         for j in range(i):
             vis_util.visualize_boxes_and_labels_on_image_array(IM[j], D['detection_boxes'][j],
                                                                D['detection_classes'][j].astype(np.uint8),
@@ -244,18 +245,20 @@ def mainTF():
             out.write(IM[j])  # wants BGR
             # plots.imshow(im)
     else:
-        # load frames into memory
         for i in range(nframes):
             success, im = cap.read()  # native BGR
             if success:
                 tic = time.time()
-                im = cv2.resize(im, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
+                im = cv2.resize(im, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
                 D = sess.run(T, feed_dict={image_tensor: np.expand_dims(cv2.cvtColor(im, cv2.COLOR_BGR2RGB), 0)})
-                print('Inference %g/%g... %.3fs.' % (i, nframes, time.time() - tic))
+                dt[i] = time.time() - tic
                 vis_util.visualize_boxes_and_labels_on_image_array(im, D['detection_boxes'][0],
                                                                    D['detection_classes'][0].astype(np.uint8),
                                                                    D['detection_scores'][0], category_index,
                                                                    use_normalized_coordinates=True, line_thickness=8)
+                s = '%s %5.3fs (mean %5.3fs)' % (mname, dt[i], dt[min(i, 1):i + 1].mean())
+                print('%g/%g %s' % (i, nframes, s))
+                im = annotateImageSpeed(im, s)
                 out.write(im)  # wants BGR
             else:
                 break
@@ -263,8 +266,11 @@ def mainTF():
     print('All done... %.3fs.' % (time.time() - tic0))
     cap.release()
     out.release()
-
-    # Close sess
     sess.close()
 
-mainTF()
+
+mainYOLO()
+# MODEL_NAME, mname = 'data/ssd_mobilenet_v1_coco_2017_11_17', 'ssd_mobilenetv1linear_'
+# mainTF(MODEL_NAME, mname)
+# MODEL_NAME, mname = 'data/ssd_mobilenet_v2_coco_2018_03_29', 'ssd_mobilenetv2linear_'
+# mainTF(MODEL_NAME, mname)
