@@ -2,25 +2,25 @@ from fcns import *
 import time
 import scipy.io
 
-import plotly.offline as py  # py.tools.set_credentials_file(username='glenn.jocher', api_key='Hcd6P8v69EAWUrdZDmpU')
-import plotly.graph_objs as go
 
+# import plotly.offline as py  # py.tools.set_credentials_file(username='glenn.jocher', api_key='Hcd6P8v69EAWUrdZDmpU')
+# import plotly.graph_objs as go
 
 # pip install --upgrade numpy scipy opencv-python exifread bokeh tensorflow
-# from darkflow.net.build import TFNet
 
 # @profile
 def vidExamplefcn():
     import plots
+    # import tensorflow as tf
 
-    n = 10  # number of frames to read
+    n = 30  # number of frames to read
     isVideo = True
     patha = '/Users/glennjocher/Downloads/DATA/VSM/'
     pathb = '/Users/glennjocher/Google Drive/MATLAB/SPEEDTRAP/'
     if isVideo:
-        # filename, startframe = patha + '2018.3.11/IMG_4119.MOV', 41 # 20km/h
-        # filename, startframe = patha + '2018.3.11/IMG_4134.MOV', 19  # 40km/h
-        filename, startframe = patha + '2018.3.30/IMG_4238.m4v', 8  # 60km/h
+        # filename, startframe = patha + '2018.3.11/IMG_4119.MOV', 41  # 20km/h
+        filename, startframe = patha + '2018.3.11/IMG_4134.MOV', 19  # 40km/h
+        #filename, startframe = patha + '2018.3.30/IMG_4238.m4v', 8  # 60km/h
         readSpeed = 1  # read every # frames
         frames = np.arange(n) * readSpeed + startframe  # video frames to read
     else:
@@ -64,16 +64,13 @@ def vidExamplefcn():
                         cap.read()  # skip frames
             A[i, 12] = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000  # access CAP_PROP *before* reading!
             A[i, 13] = cap.get(cv2.CAP_PROP_POS_FRAMES)
-            success, im = cap.read()  # read frame
-            im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+            success, imbgr = cap.read()  # read frame
+            im = cv2.cvtColor(imbgr, cv2.COLOR_BGR2GRAY)
         else:
-            success = True
-            im = cv2.imread(imagename[i], 0)  # 0 second argument = grayscale
+            success, im = True, cv2.imread(imagename[i], 0)  # 0 second argument = grayscale
             exif = importEXIF(imagename[i])
             A[i, 9:13] = fcnEXIF2LLAT(exif)
-            if i == 0:
-                t0 = A[0, 12]
-            A[i, 12] -= t0
+
         if not success:
             break
 
@@ -93,8 +90,9 @@ def vidExamplefcn():
                                  (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.001))
             # p = scipy.io.loadmat('/Users/glennjocher/Documents/PyCharmProjects/Velocity/data/pc_v7.mat')['pc']
             p = np.concatenate((q, p), axis=0)
-            t, R, residuals, p_ = estimatePlatePosition(K, p[0:4, :], worldPointsLicensePlate())
-            p_w2 = image2world(K, R, t, p)
+            t, R, residuals, p_ = estimatePlatePosition(K, p[0:4, :], worldPointsLicensePlate(), None)
+            p2 = addcol0(image2world(K, R, t, p))
+            p3 = p2 @ R  # + t
             p_ = p
 
             # initialize
@@ -103,18 +101,18 @@ def vidExamplefcn():
             vi[:] = True
             vg = vi  # P[3,] valid points globally
             P[:] = np.nan
-            imfirst, dt, dr, r, speed = im, 0, 0, 0, 0
+            imfirst, dt, dr, r, speed, t0 = im, 0, 0, 0, 0, A[0, 12]
             im0_small = cv2.resize(im, (0, 0), fx=1 / 4, fy=1 / 4, interpolation=cv2.INTER_NEAREST)
-
         else:
             # update
             p, vi, im0_small = KLTwarp(im, im0, im0_small, p0)
-            p_w2 = p_w2[vi]
+            p3 = p3[vi]
+            p2 = p2[vi]
             p = p[vi]
             vg[vg] = vi
 
             # Get plate position
-            t, R, residuals, p_ = estimatePlatePosition(K, p, p_w2, t, R)
+            t, R, residuals, p_ = estimatePlatePosition(K, p, p2, p3, t=t, R=R)
 
             dt = A[i, 12] - A[i - 1, 12]
             dr = norm(t - B[i - 1, 0:3])
@@ -123,10 +121,12 @@ def vidExamplefcn():
             speed = dr / dt * 3.6  # m/s to km/h
             del im0
 
+        #a = pixel2angle(K, np.array([[-10000, 2000],[20, 30]]))
+
+
         # Print image[i] results
         proc_dt[i] = time.time() - tic
-        mr = residuals.sum() / residuals.size
-        S[i, :] = (i, proc_dt[i], p.shape[0], mr, dt, A[i, 12], dr, r, speed)
+        S[i, :] = (i, proc_dt[i], p.shape[0], residuals.mean(), dt, A[i, 12] - t0, dr, r, speed)
         print('%13g%13.3f%13g%13.3f%13.3f%13.3f%13.2f%13.2f%13.1f' % tuple(S[i, :]))
 
         # plots
@@ -139,6 +139,9 @@ def vidExamplefcn():
         P[3, vg, i] = p_[:, 1]  # y_proj
         im0 = im
         p0 = p
+
+        # imrgb = cv2.cvtColor(imbgr,cv2.COLOR_BGR2RGB)
+        # plots.imshow(cv2.cvtColor(imrgb,cv2.COLOR_BGR2HSV_FULL)[:,:,0])
     if isVideo:
         cap.release()  # Release the video capture object
 

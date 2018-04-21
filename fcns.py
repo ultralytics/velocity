@@ -1,6 +1,4 @@
 import math
-import tensorflow as tf
-
 import cv2  # pip install opencv-python, pip install opencv-contrib-python
 import numpy as np
 
@@ -18,7 +16,7 @@ np.set_printoptions(linewidth=320, formatter={'float_kind': '{:11.5g}'.format}) 
 def norm(x):
     s = x.shape
     if len(s) > 1:
-        n = x.shape[1]
+        n = s[1]
         if n == 3:
             return (x[:, 0] ** 2 + x[:, 1] ** 2 + x[:, 2] ** 2) ** 0.5
         elif n == 2:
@@ -37,10 +35,28 @@ def worldPointsLicensePlate():
     # return np.array([[1, -1],[1, 1],[-1, 1],[-1, -1]]) * (size / 2)
     x = 0.3725 / 2
     y = 0.1275 / 2  # [0.36 0.13] #(m) license plate size (Chile)
-    return np.array([[x, -y],
-                     [x, y],
-                     [-x, y],
-                     [-x, -y]], dtype='float32')  # worldPoints
+    return np.array([[x, -y, 0],
+                     [x, y, 0],
+                     [-x, y, 0],
+                     [-x, -y, 0]], np.float32)  # worldPoints
+
+
+def elaz(x):
+    s = x.shape
+    r = norm(x)
+    if len(s) == 1:
+        ea = np.array([math.asin(-x[2] / r), math.atan(x[1] / x[0])])
+    else:
+        ea = np.zeros((s[0], 2))
+        ea[:, 0] = np.arcsin(-x[:, 2] / r)
+        ea[:, 1] = np.arctan(x[:, 1] / x[:, 0])
+    return ea
+
+
+def pixel2angle(K, x):
+    x = np.concatenate((x - K[2, 0:2], np.zeros((x.shape[0], 1))), axis=1)
+    x[:, 2] = K[1, 1]  # focal length (pixels)
+    return elaz(x @ cam2ned().T)
 
 
 def cam2ned():
@@ -276,7 +292,7 @@ def estimateAffine2D_SURF(im1, im2, p1, scale=1.0):
 
 # @profile
 def KLTregional(im0, im, p0, T, lk_param, fbt=1.0, translateFlag=False):
-    T = T.astype('float32')
+    T = T.astype(np.float32)
     # 1. Warp current image to past image frame
     # im_warped_0 = cv2.warpAffine(im, T23, (int(im.shape[1]/2), int(im.shape[0]/2)),flags=cv2.WARP_INVERSE_MAP)
     x0, x1, y0, y1 = boundingRect(p0, im.shape, border=50)
@@ -290,7 +306,7 @@ def KLTregional(im0, im, p0, T, lk_param, fbt=1.0, translateFlag=False):
         im_warped_0 = im[y0 + dy:y1 + dy, x0 + dx:x1 + dx]
     else:
         x, y = np.meshgrid(np.arange(x0, x1), np.arange(y0, y1))
-        ixy = np.ones([x.size, 3], np.float32)
+        ixy = np.ones((x.size, 3), np.float32)
         ixy[:, 0] = x.ravel()
         ixy[:, 1] = y.ravel()
         ixy_ = ixy @ T
@@ -317,9 +333,7 @@ def KLTregional(im0, im, p0, T, lk_param, fbt=1.0, translateFlag=False):
     if translateFlag:
         p = pa + (xy0 + [dx, dy]).astype(np.float32)
     else:
-        p = np.ones([pa.shape[0], 3], np.float32)
-        p[:, 0:2] = pa + xy0
-        p = p @ T
+        p = addcol1(pa + xy0) @ T
 
     # residuals = norm(p0_roi[v] - pa[v])
     # _, i = fcnsigmarejection(residuals, srl=3, ni=3)
@@ -364,60 +378,60 @@ def KLTwarp(im, im0, im0_small, p0):
 
 
 # @profile
-def estimatePlatePosition(K, p_im, p_w, t=None, R=None):
+def estimatePlatePosition(K, p, p_w, p3, t=None, R=None):
     # Linear solution
-    # R, t = extrinsicsPlanar(p_im, p_w, K)
-    # x0 = np.concatenate([dcm2rpy(R), t])
+    # R, t = extrinsicsPlanar(p, p_w, K)
 
     # Nonlinear Least Squares
-    p_w3 = np.zeros([p_w.shape[0], 3], dtype=float)
-    p_w3[:, 0:2] = p_w
+    if t is None:
+        x0 = np.array([1, 0, 0, 0, 0, 1], float)
+    else:
+        x0 = np.concatenate([dcm2rpy(R), t])
 
-    # if t is None:
-    x0 = np.array([1, 0, 0, 0, 0, 1], dtype=float)
-    # else:
-    #    rpy = dcm2rpy(R)
-    #    x0 = np.float32(np.concatenate((rpy[None],t[None]), axis=1)).ravel()
-    R, t = fcnNLScamera2world(K.astype(float), p_im.astype(float), p_w3, x0)
+    if p3 is not None:
+        t = fcnNLS_t(K.astype(float), p.astype(float), p3, np.array([0, 0, 1]))
+    else:
+        R, t = fcnNLS_Rt(K.astype(float), p.astype(float), p_w, x0)
 
     # Residuals
-    p_im_projected = world2image(K, R, t, p_w3)
-    residuals = norm(p_im_projected - p_im)
+    p_im_projected = world2image(K, R, t, p_w)
+    residuals = norm(p_im_projected - p)
     return t, R, residuals, p_im_projected
 
 
+def addcol0(x):
+    y = np.zeros((x.shape[0], x.shape[1] + 1), x.dtype)
+    y[:, :-1] = x
+    return y
+
+
+def addcol1(x):
+    y = np.ones((x.shape[0], x.shape[1] + 1), x.dtype)
+    y[:, :-1] = x
+    return y
+
+
 def image2world3(R, t, p):
-    p3 = np.ones([p.shape[0], 3], np.float32)
-    p3[:, 0:2] = p
-    return p3 @ R + t
+    return addcol1(p) @ R + t
 
 
-def image2world(K, R, t, p):
-    # Copy of MATLAB function pointsToworld
+def image2world(K, R, t, p):  # MATLAB pointsToworld copy
     tform = np.concatenate([R[0:2, :], t[None]]) @ K
-    p3 = np.ones([p.shape[0], 3], np.float32)
-    p3[:, 0:2] = p
-
-    p_w = p3 @ np.linalg.inv(tform)
+    p_w = addcol1(p) @ np.linalg.inv(tform)
     return p_w[:, 0:2] / p_w[:, 2:3]
 
 
-def world2image(K, R, t, p_w):
-    # Copy of MATLAB function worldToImage
-    camera_matrix = np.concatenate([R, t[None]]) @ K
-    p4 = np.ones([p_w.shape[0], 4], np.float32)
-    p4[:, 0:3] = p_w
-    p = p4 @ camera_matrix
+def world2image(K, R, t, p_w):  # MATLAB worldToImage copy
+    camMatrix = np.concatenate([R, t[None]]) @ K
+    p = addcol1(p_w) @ camMatrix  # nx4 * 4x3
     return p[:, 0:2] / p[:, 2:3]
 
 
 # @profile
-def extrinsicsPlanar(imagePoints, worldPoints, K):
-    # Copy of MATLAB function by same name
-    # s[uv1]' = cam_intrinsics * [R t] * [xyz1]'
+def extrinsicsPlanar(imagePoints, worldPoints, K):  # Copy of MATLAB function by same name
+    # s[uv1]' = K * [R t] * [xyz1]'
 
     # Compute homography.
-    # H = fitgeotrans(worldPoints, imagePoints, 'projective')
     H, inliers = cv2.findHomography(worldPoints, imagePoints, method=0)  # methods = 0, RANSAC = 8, LMEDS, RHO
     h1 = H[:, 0]
     h2 = H[:, 1]
@@ -449,8 +463,54 @@ def extrinsicsPlanar(imagePoints, worldPoints, K):
     return R, T
 
 
+def fcnNLS_t(K, p, p_w, x):
+    # K = 3x3 intrinsic matrix
+    # p = nx2 image points
+    # p_w = nx3 world points
+    # p_w = p_w @ cam2ned().T
+
+    def fzhat(a, K):
+        # a = np.concatenate((a,np.ones((a.shape[0],1))), axis=1)  # general case with full camMatrix
+        zhat = a @ K  # simplify for special case of R=eye(3), t=[0,0,0]
+        return (zhat[:, 0:2] / zhat[:, 2:3]).ravel()
+
+    R = np.eye(3)
+    t = np.zeros([1, 3])
+    camMatrix = np.concatenate([R, t]) @ K
+
+    dx = 1E-6  # for numerical derivatives
+    dx1 = [dx, 0, 0]
+    dx2 = [0, dx, 0]
+    dx3 = [0, 0, dx]
+    n = p_w.shape[0]
+    z = p.ravel()  # nz=numel(z)
+    max_iter = 100
+    mdm = np.eye(3) * 1  # marquardt damping matrix (eye times damping coeficient)
+    for i in range(max_iter):
+        b0 = p_w + x[0:4]
+        b1 = b0 + dx1
+        b2 = b0 + dx2
+        b3 = b0 + dx3
+        zhat = fzhat(b0, K)
+
+        JT = np.concatenate((fzhat(b1, K),
+                             fzhat(b2, K),
+                             fzhat(b3, K)), axis=0).reshape(3, n * 2)  # J Transpose
+        JT = (JT - zhat) / dx
+        JTJ = JT @ JT.T  # J.T @ J
+        delta = np.linalg.inv(JTJ + mdm) @ JT @ (z - zhat) * min(((i + 1) * .2) ** 2, 1)
+        # print((z-zhat).mean())
+        x = x + delta
+        if rms(delta) < 1E-9:
+            break
+    if i == (max_iter - 1):
+        print('WARNING: fcnNLSplateTravel() reaching max iterations!')
+    # print('%i steps, residual rms = %.5f' % (i,(z - zhat).mean()))
+    return x.astype(np.float32)
+
+
 # @profile
-def fcnNLScamera2world(K, p, p_w, x):
+def fcnNLS_Rt(K, p, p_w, x):
     # K = 3x3 intrinsic matrix
     # p = nx2 image points
     # p_w = nx3 world points
@@ -483,7 +543,7 @@ def fcnNLScamera2world(K, p, p_w, x):
     n = p_w.shape[0]
     z = p.ravel()  # nz=numel(z)
     max_iter = 100
-    mdm = np.diag(np.eye(6) * 1)  # marquardt damping matrix (eye times damping coeficient)
+    mdm = np.eye(6) * 1  # marquardt damping matrix (eye times damping coeficient)
     # jfunc = jacobian(fzhat0)
     for i in range(max_iter):
         x03 = x[0:3]
@@ -510,6 +570,7 @@ def fcnNLScamera2world(K, p, p_w, x):
         JTJ = JT @ JT.T  # J.T @ J
         delta = np.linalg.inv(JTJ + mdm) @ JT @ (z - zhat) * min(((i + 1) * .2) ** 2, 1)
         # delta = np.linalg.solve(JTJ + mdm, JT) @ (z - zhat)  # slower, but possibly more stable??
+        print((z - zhat).mean())
         x = x + delta
         if rms(delta) < 1E-9:
             break

@@ -1,0 +1,17 @@
+import cv2  # pip install opencv-python, pip install opencv-contrib-python
+import fcns
+import os
+
+PATH = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/IMG_4119.MOV'
+path, file, _, _ = fcns.filenamesplit(PATH)
+newdir = path + file + '/'
+
+if not os.path.exists(newdir):
+    os.mkdir(newdir)
+
+cap = cv2.VideoCapture(PATH)
+for i in range(0, 300):
+    success, im = cap.read()  # read frame
+    if success:
+        print('image %g/%g ...' % (cap.get(cv2.CAP_PROP_POS_FRAMES), cap.get(cv2.CAP_PROP_FRAME_COUNT)))
+        cv2.imwrite(newdir + str(i) + '.jpg', im)
