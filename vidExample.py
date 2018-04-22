@@ -13,14 +13,14 @@ def vidExamplefcn():
     import plots
     # import tensorflow as tf
 
-    n = 30  # number of frames to read
+    n = 10  # number of frames to read
     isVideo = True
     patha = '/Users/glennjocher/Downloads/DATA/VSM/'
     pathb = '/Users/glennjocher/Google Drive/MATLAB/SPEEDTRAP/'
     if isVideo:
         # filename, startframe = patha + '2018.3.11/IMG_4119.MOV', 41  # 20km/h
-        filename, startframe = patha + '2018.3.11/IMG_4134.MOV', 19  # 40km/h
-        #filename, startframe = patha + '2018.3.30/IMG_4238.m4v', 8  # 60km/h
+        # filename, startframe = patha + '2018.3.11/IMG_4134.MOV', 19  # 40km/h
+        filename, startframe = patha + '2018.3.30/IMG_4238.m4v', 8  # 60km/h
         readSpeed = 1  # read every # frames
         frames = np.arange(n) * readSpeed + startframe  # video frames to read
     else:
@@ -91,9 +91,11 @@ def vidExamplefcn():
             # p = scipy.io.loadmat('/Users/glennjocher/Documents/PyCharmProjects/Velocity/data/pc_v7.mat')['pc']
             p = np.concatenate((q, p), axis=0)
             t, R, residuals, p_ = estimatePlatePosition(K, p[0:4, :], worldPointsLicensePlate(), None)
-            p2 = addcol0(image2world(K, R, t, p))
+            p2 = addcol0(image2world(K, R, t, p).astype(float))
             p3 = p2 @ R  # + t
             p_ = p
+
+            residual = p - world2image(K, np.eye(3), np.array([0, 0, 0]), p2 @ R + t)
 
             # initialize
             vi = np.empty(p.shape[0], dtype=bool)  # valid points in image i
@@ -113,16 +115,29 @@ def vidExamplefcn():
 
             # Get plate position
             t, R, residuals, p_ = estimatePlatePosition(K, p, p2, p3, t=t, R=R)
+            print(R)
 
             dt = A[i, 12] - A[i - 1, 12]
             dr = norm(t - B[i - 1, 0:3])
-
-            r += dr
             speed = dr / dt * 3.6  # m/s to km/h
+            r += dr
             del im0
 
-        #a = pixel2angle(K, np.array([[-10000, 2000],[20, 30]]))
+            if i == 4:
+                ux1 = np.zeros((i, vi.size))
+                uy1 = np.zeros((i, vi.size))
+                uz1 = np.zeros((i, vi.size))
+                for j in range(i):
+                    u = pixel2uvec(K, (P[0:2, vg, j]).T)
+                    ux1[j] = u[:, 0]
+                    uy1[j] = u[:, 1]
+                    uz1[j] = u[:, 2]
+                u0 = B[0, 0:3] - B[:i, 0:3]
+                C2 = fcn2vintercept(u0, ux1, uy1, uz1)
+                CN = fcnNvintercept(u0, ux1, uy1, uz1)
+                C2 - CN
 
+        # a = pixel2angle(K, np.array([[-10000, 2000],[20, 30]]))
 
         # Print image[i] results
         proc_dt[i] = time.time() - tic

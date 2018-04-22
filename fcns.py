@@ -2,16 +2,22 @@ import math
 import cv2  # pip install opencv-python, pip install opencv-contrib-python
 import numpy as np
 
+np.set_printoptions(linewidth=320, formatter={'float_kind': '{:11.5g}'.format})  # format short g, %precision=5
+
+
 # import autograd.numpy as np
 # from autograd import jacobian
 
 # Set options
 # pd.set_option('display.width', desired_width)
-np.set_printoptions(linewidth=320, formatter={'float_kind': '{:11.5g}'.format})  # format short g, %precision=5
-
-
-# np.set_printoptions(linewidth=320, formatter={'float_kind': '{:21.15g}'.format})  # format long g, %precision=15
+# np.set_printoptions(linewidth=320, formatter={'float_kind': '{:11.5g}'.format})  # format short g, %precision=5
+#  np.set_printoptions(linewidth=320, formatter={'float_kind': '{:21.15g}'.format})  # format long g, %precision=15
 # %precision '%0.8g'
+
+
+def rms(x):
+    return math.sqrt((x * x).sum()) / x.size
+
 
 def norm(x):
     s = x.shape
@@ -27,21 +33,18 @@ def norm(x):
         return math.sqrt((x * x).sum())
 
 
-# Define functions
-def worldPointsLicensePlate():
-    # Returns x, y coordinates of license plate outline in meters
+def uvec(x, axis=1):  # turns each row or col into a unit vector
+    r = (x * x).sum(axis=axis) ** 0.5
+    return x / r[:, None]
+
+
+def worldPointsLicensePlate():  # Returns x, y coordinates of license plate
     # https://en.wikipedia.org/wiki/Vehicle_registration_plate
-    # size = np.array([.3725, .1275])  # [0.36 0.13] (m) license plate size (Chile)
-    # return np.array([[1, -1],[1, 1],[-1, 1],[-1, -1]]) * (size / 2)
-    x = 0.3725 / 2
-    y = 0.1275 / 2  # [0.36 0.13] #(m) license plate size (Chile)
-    return np.array([[x, -y, 0],
-                     [x, y, 0],
-                     [-x, y, 0],
-                     [-x, -y, 0]], np.float32)  # worldPoints
+    size = [.3725, .1275, 0]  # [0.36 0.13] (m) license plate size (Chile)
+    return np.array([[1, -1, 0], [1, 1, 0], [-1, 1, 0], [-1, -1, 0]], np.float32) * (np.array(size, np.float32) / 2)
 
 
-def elaz(x):
+def elaz(x):  # cartesian coordinate to spherical el and az angles
     s = x.shape
     r = norm(x)
     if len(s) == 1:
@@ -53,14 +56,19 @@ def elaz(x):
     return ea
 
 
-def pixel2angle(K, x):
-    x = np.concatenate((x - K[2, 0:2], np.zeros((x.shape[0], 1))), axis=1)
-    x[:, 2] = K[1, 1]  # focal length (pixels)
-    return elaz(x @ cam2ned().T)
+def pixel2angle(K, p):
+    p = addcol0(p - K[2, 0:2])
+    p[:, 2] = K[0, 0]  # focal length (pixels)
+    return elaz(p @ cam2ned().T)
 
 
-def cam2ned():
-    # x_ned(3x5) = R * x_cam(3x5)   - EQUALS -   x_ned(5x3) = x_cam(5x3) * R'
+def pixel2uvec(K, p):
+    p = addcol0(p - K[2, 0:2])
+    p[:, 2] = K[0, 0]  # focal length (pixels)
+    return uvec(p)
+
+
+def cam2ned():  # x_ned(3x5) = R * x_cam(3x5)   - EQUALS -   x_ned(5x3) = x_cam(5x3) * R'
     # +X_ned(NORTH) = +Z_cam(NORTH)
     # +Y_ned(EAST)  = +X_cam(EAST)
     # +Z_ned(DOWN)  = +Y_cam(DOWN)
@@ -69,8 +77,7 @@ def cam2ned():
                      [0, 1, 0]])  # R
 
 
-def fcnEXIF2LLAT(E):
-    # E = image exif info i.e. E = importEXIF('img.jpg')
+def fcnEXIF2LLAT(E):  # E = image exif info i.e. E = importEXIF('img.jpg')
     # llat = [lat, long, alt (m), time (s)]
     # MATLAB:  datenum('2018:03:11 15:57:22','yyyy:mm:dd HH:MM:SS') # fractional day since 00/00/000
     # Python:  d = datetime.strptime('2018:03:11 15:57:22', "%Y:%m:%d %H:%M:%S"); datetime.toordinal(d) + 366
@@ -93,39 +100,27 @@ def fcnEXIF2LLAT(E):
     return llat
 
 
-def dms2degrees(dms):
-    # converts GPS [degrees minutes seconds] to decimal degrees
-    # dms(1x3)
-    return dms[0] + dms[1] / 60 + dms[2] / 3600  # degrees
+def dms2degrees(dms):  # maps GPS [degrees minutes seconds] to decimal degrees
+    return dms[0] + dms[1] / 60 + dms[2] / 3600
 
 
-def hemisphere2sign(x):
-    # converts hemisphere strings 'N', 'S', 'E', 'W' to signs 1, -1, 1, -1
-    sign = np.zeros_like(x, dtype=float)
+def hemisphere2sign(x):  # converts hemisphere strings 'N', 'S', 'E', 'W' to signs 1, -1, 1, -1
+    sign = np.zeros_like(x)
     sign[(x == 'N') | (x == 'E')] = 1
     sign[(x == 'S') | (x == 'W')] = -1
     return sign
 
 
-def filenamesplit(string):
-    # splits a full filename string into path, filename, and extension. Example:
-    # str = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/IMG_4124.JPG'
-    # path = '/Users/glennjocher/Downloads/DATA/VSM/2018.3.11/'
-    # filename = 'IMG_4124.JPG'
-    # extension = '.JPG'
+def filenamesplit(string):  # splits a full filename string into path, file, and extension.
+    # Example:  path, file, extension, fileext = filenamesplit('/Users/glennjocher/Downloads/IMG_4124.JPG')
     i = string.rfind('/') + 1
     j = string.rfind('.')
-    path = string[0:i]
-    file = string[i:j]
-    extension = string[j:]
+    path, file, extension = string[:i], string[i:j], string[j:]
     return path, file, extension, file + extension
 
 
 # @profile
-def getCameraParams(fullfilename, platform='iPhone 6s'):
-    # returns camera parameters and file information structure cam
-    # fullfilename: video or image(s) file name(s) i.e. mymovie.mov or IMG_3797.jpg
-    # platform: camera name i.e. 'iPhone 6s'
+def getCameraParams(fullfilename, platform='iPhone 6s'):  # returns camera parameters and file information structure cam
     pathname, _, extension, filename = filenamesplit(fullfilename)
     isvideo = (extension == '.MOV') | (extension == '.mov') | (extension == '.m4v')
 
@@ -167,12 +162,11 @@ def getCameraParams(fullfilename, platform='iPhone 6s'):
             width = exif['EXIF ExifImageWidth']
             height = exif['EXIF ExifImageLength']
             fps = 0
-            frame_count = 0
+            frame_count = 1
 
             skew = 0
             focalLength_pix = [3486, 3486]
             # focalLength_pix = exif['EXIF FocalLength'] / sensorSize(1) * width
-
     elif platform == 'iPhone x':
         'fill in here'
 
@@ -186,17 +180,6 @@ def getCameraParams(fullfilename, platform='iPhone 6s'):
         orientation_comment = 'Horizontal'
     elif orientation == 6:
         orientation_comment = 'Vertical'
-
-    # Define camera parameters
-    params = ''  # cameraParameters('IntrinsicMatrix', IntrinsicMatrix, 'RadialDistortion', radialDistortion)
-
-    # Pre-define interpolation grid for use with imwarp or interp2
-    # x, y = np.meshgrid(np.arange(width, dtype=float), np.arange(height, dtype=float))
-    # ixy = np.stack((x.transpose().flatten(), y.transpose().flatten()), axis=0).transpose()  # one-liner
-    # ixy = np.ones([x.size, 3], dtype=float)
-    # ixy[:, 0] = x.transpose().flatten()
-    # ixy[:, 1] = y.transpose().flatten()
-    ixy = 0
 
     cam = {
         'fullfilename': fullfilename,
@@ -214,14 +197,12 @@ def getCameraParams(fullfilename, platform='iPhone 6s'):
         'principalPoint': principalPoint,
         'IntrinsicMatrix': IntrinsicMatrix,
         'radialDistortion': radialDistortion,
-        'ixy': ixy,
+        'ixy': None,
         'kltBlockSize': kltBlockSize,
         'orientation': orientation,
         'orientation_comment': orientation_comment,
         'fps': fps,
-        'frame_count': frame_count,
-        'params': params
-    }
+        'frame_count': frame_count}
     return cam, cap
 
 
@@ -230,12 +211,12 @@ def importEXIF(fullfilename):
     exif = exifread.process_file(open(fullfilename, 'rb'), details=False)
     for tag in exif.keys():
         a = exif[tag].values[:]
-        if type(a) == str and a.isnumeric():
+        if type(a) is str and a.isnumeric():
             a = float(a)
-        if type(a) == list:
+        if type(a) is list:
             n = a.__len__()
             a = np.asarray(a)
-            for i in range(0, n):
+            for i in range(n):
                 if type(a[i]) == exifread.utils.Ratio:
                     a[i] = float(a[i].num / a[i].den)
             if n == 1:
@@ -344,7 +325,7 @@ def KLTregional(im0, im, p0, T, lk_param, fbt=1.0, translateFlag=False):
 
 # @profile
 def KLTwarp(im, im0, im0_small, p0):
-    # Parameters for lucas kanade optical flow
+    # Parameters for KLT
     EPS = cv2.TERM_CRITERIA_EPS
     COUNT = cv2.TERM_CRITERIA_COUNT
     lk_coarse = dict(winSize=(15, 15), maxLevel=11, criteria=(EPS | COUNT, 20, 0.1))
@@ -383,35 +364,35 @@ def estimatePlatePosition(K, p, p_w, p3, t=None, R=None):
     # R, t = extrinsicsPlanar(p, p_w, K)
 
     # Nonlinear Least Squares
-    if t is None:
-        x0 = np.array([1, 0, 0, 0, 0, 1], float)
-    else:
-        x0 = np.concatenate([dcm2rpy(R), t])
-
     if p3 is not None:
-        t = fcnNLS_t(K.astype(float), p.astype(float), p3, np.array([0, 0, 1]))
+        x0 = np.array([0, 0, 1], float)
+        t = fcnNLS_t(K.astype(float), p.astype(float), p3, x0)
     else:
+        if t is None:
+            x0 = np.array([1, 0, 0, 0, 0, 1], float)
+        else:
+            x0 = np.concatenate([dcm2rpy(R), t])
         R, t = fcnNLS_Rt(K.astype(float), p.astype(float), p_w, x0)
 
     # Residuals
-    p_im_projected = world2image(K, R, t, p_w)
-    residuals = norm(p_im_projected - p)
-    return t, R, residuals, p_im_projected
+    p_proj = world2image(K, R, t, p_w)
+    residuals = norm(p - p_proj)
+    return t, R, residuals, p_proj
 
 
-def addcol0(x):
+def addcol0(x):  # append a zero column to right side
     y = np.zeros((x.shape[0], x.shape[1] + 1), x.dtype)
     y[:, :-1] = x
     return y
 
 
-def addcol1(x):
+def addcol1(x):  # append a ones column to right side
     y = np.ones((x.shape[0], x.shape[1] + 1), x.dtype)
     y[:, :-1] = x
     return y
 
 
-def image2world3(R, t, p):
+def image2world3(R, t, p):  # image coordinate to world coordinate
     return addcol1(p) @ R + t
 
 
@@ -458,9 +439,9 @@ def extrinsicsPlanar(imagePoints, worldPoints, K):  # Copy of MATLAB function by
     R = U @ V
 
     # Compute translation vector
-    T = np.linalg.solve(A, lambda_ * h3)
-    # T =  Ainv @ (lambda_ * h3[:, None]).ravel()
-    return R, T
+    t = np.linalg.solve(A, lambda_ * h3)
+    # t =  Ainv @ (lambda_ * h3[:, None]).ravel()
+    return R, t
 
 
 def fcnNLS_t(K, p, p_w, x):
@@ -495,7 +476,7 @@ def fcnNLS_t(K, p, p_w, x):
 
         JT = np.concatenate((fzhat(b1, K),
                              fzhat(b2, K),
-                             fzhat(b3, K)), axis=0).reshape(3, n * 2)  # J Transpose
+                             fzhat(b3, K))).reshape(3, n * 2)  # J Transpose
         JT = (JT - zhat) / dx
         JTJ = JT @ JT.T  # J.T @ J
         delta = np.linalg.inv(JTJ + mdm) @ JT @ (z - zhat) * min(((i + 1) * .2) ** 2, 1)
@@ -564,13 +545,13 @@ def fcnNLS_Rt(K, p, p_w, x):
                              fzhat(a3 + b0, K),
                              fzhat(a0 + b1, K),
                              fzhat(a0 + b2, K),
-                             fzhat(a0 + b3, K)), axis=0).reshape(6, n * 2)  # J Transpose
+                             fzhat(a0 + b3, K))).reshape(6, n * 2)  # J Transpose
         JT = (JT - zhat) / dx
 
         JTJ = JT @ JT.T  # J.T @ J
         delta = np.linalg.inv(JTJ + mdm) @ JT @ (z - zhat) * min(((i + 1) * .2) ** 2, 1)
         # delta = np.linalg.solve(JTJ + mdm, JT) @ (z - zhat)  # slower, but possibly more stable??
-        print((z - zhat).mean())
+        # print((z - zhat).mean())
         x = x + delta
         if rms(delta) < 1E-9:
             break
@@ -582,8 +563,7 @@ def fcnNLS_Rt(K, p, p_w, x):
     return R.astype(np.float32), t.astype(np.float32)
 
 
-def rpy2dcm(rpy):
-    # [roll, pitch, yaw] to direction cosine matrix
+def rpy2dcm(rpy):  # [roll, pitch, yaw] to direction cosine matrix
     sr = math.sin(rpy[0])
     sp = math.sin(rpy[1])
     sy = math.sin(rpy[2])
@@ -595,8 +575,7 @@ def rpy2dcm(rpy):
                      [- sp, sr * cp, cr * cp]])
 
 
-def dcm2rpy(R):
-    # direction cosine matrix to [roll, pitch, yaw] aka [phi, theta, psi]
+def dcm2rpy(R):  # direction cosine matrix to [roll, pitch, yaw] aka [phi, theta, psi]
     rpy = np.zeros(3)
     rpy[0] = math.atan(R[2, 1] / R[2, 2])
     rpy[1] = math.asin(-R[2, 0])
@@ -604,14 +583,12 @@ def dcm2rpy(R):
     return rpy
 
 
-def quat32rotm(q):
-    # 3 element quaternion representation (roll is norm(q))
+def quat32rotm(q):  # 3 element quaternion representation (roll is norm(q))
     r = norm(q)
     return rpy2dcm([r, math.asin(-q[2] / r), math.atan(q[1] / q[0])])
 
 
-def quat2rotm(q):
-    # R = np.zeros(3,3)
+def quat2rotm(q):  # R = np.zeros(3,3)
     q = q / norm(q)
     s, x, y, z = q
     return np.array([1 - 2 * (y * y + z * z), 2 * (x * y - s * z), 2 * (x * z + s * y),
@@ -619,7 +596,7 @@ def quat2rotm(q):
                      2 * (x * z - s * y), 2 * (y * z + s * x), 1 - 2 * (x * x + y * y)]).reshape(3, 3)
 
 
-def rotm2quat(R):
+def rotm2quat(R):  # incomplete
     q = np.zeros(4)
     return q
 
@@ -637,5 +614,92 @@ def fcnsigmarejection(x, srl=3.0, ni=3):
     return x, v
 
 
-def rms(x):
-    return math.sqrt((x * x).sum()) / x.size
+def fcn2vintercept(A, ux1, uy1, uz1):
+    # A = nx3 camera origins, ux1 = nxnp x unit vectors
+    nf, nv = ux1.shape  # nframes, npoints
+    C0 = np.zeros([nv, 3])
+
+    a = np.arange(1, nf + 1)
+    j = np.tril(a, -1).T
+    j = j[j != 0] - 1
+    k = np.triu(a, 1)
+    k = k[k != 0] - 1
+    dA = A[j] - A[k]
+    BAx = dA[:, 0:1]
+    BAy = dA[:, 1:2]
+    BAz = dA[:, 2:3]
+
+    # COMBINATIONS
+    vx = ux1[k, :]
+    vy = uy1[k, :]
+    vz = uz1[k, :]
+    ux = ux1[j, :]
+    uy = uy1[j, :]
+    uz = uz1[j, :]
+
+    # VECTOR INTERCEPTS
+    d = ux * vx + uy * vy + uz * vz
+    e = ux * BAx + uy * BAy + uz * BAz
+    f = vx * BAx + vy * BAy + vz * BAz
+    g = 1 - d * d
+    s1 = (d * f - e) / g  # multiply times u
+    t1 = (f - d * e) / g  # multiply times v
+
+    # MISCLOSURE VECTOR RANGE RESIDUALS
+    r = ((t1 * vx - BAx - s1 * ux) ** 2 + (t1 * vy - BAy - s1 * uy) ** 2 + (t1 * vz - BAz - s1 * uz) ** 2) ** 0.5
+
+    # TIE POINT CENTERS
+    den = j.size * 2  # denominator = number of permutations times 2
+    B = A.sum(0) * (nf - 1)
+    C0[:, 0] = ((t1 * vx + s1 * ux).sum(0) + B[0]) / den
+    C0[:, 1] = ((t1 * vy + s1 * uy).sum(0) + B[1]) / den
+    C0[:, 2] = ((t1 * vz + s1 * uz).sum(0) + B[2]) / den
+    return C0
+
+
+def fcnNvintercept(A, ux1, uy1, uz1):
+    nf, nv = ux1.shape  # nframes, npoints
+    C0 = np.zeros([nv, 3])
+    # for j in range(np)
+    #     vi = [ux1[:,j] uy1[:,j] uz1[:,j]]  S1 = zeros[3]  S2 = zeros[3,1]
+    #     for i=1:cam.msv.nf #nf vectors
+    #         a1 = eye[3] - vi[i,:]'*vi[i,:]
+    #         S1 = S1 + a1
+    #         S2 = S2 + a1*A[i,:]'
+    #     end
+    #     C0[j,:] = S1\S2
+    # end
+
+    v1 = 1 - ux1 * ux1
+    v2 = -ux1 * uy1
+    v3 = -ux1 * uz1
+    v4 = v2
+    v5 = 1 - uy1 * uy1
+    v6 = -uy1 * uz1
+    v7 = v3
+    v8 = v6
+    v9 = 1 - uz1 * uz1
+
+    S1mat = np.zeros([9, nv])
+    S1mat[0, :] = v1.sum(0)
+    S1mat[1, :] = v2.sum(0)
+    S1mat[2, :] = v3.sum(0)
+    S1mat[3, :] = v4.sum(0)
+    S1mat[4, :] = v5.sum(0)
+    S1mat[5, :] = v6.sum(0)
+    S1mat[6, :] = v7.sum(0)
+    S1mat[7, :] = v8.sum(0)
+    S1mat[8, :] = v9.sum(0)
+
+    S2mat = np.zeros([3, nv])
+    Ax = A[:, 0:1].T
+    Ay = A[:, 1:2].T
+    Az = A[:, 2:3].T
+    S2mat[0, :] = Ax @ v1 + Ay @ v2 + Az @ v3
+    S2mat[1, :] = Ax @ v4 + Ay @ v5 + Az @ v6
+    S2mat[2, :] = Ax @ v7 + Ay @ v8 + Az @ v9
+
+    S1m = S1mat.reshape((3, 3, nv))
+    for j in range(nv):
+        C0[j, :] = np.linalg.solve(S1m[:, :, j], S2mat[:, j])
+    return C0
