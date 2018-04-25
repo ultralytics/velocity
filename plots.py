@@ -3,6 +3,7 @@ from bokeh import io, plotting, palettes, models
 from bokeh.layouts import column, row
 
 
+# @profile
 def plotresults(cam, im, P, S, B, bbox):
     # Bokeh Plotting
     io.reset_output()
@@ -10,8 +11,11 @@ def plotresults(cam, im, P, S, B, bbox):
     h, w = im.shape
     n = P.shape[2]  # number of images
     xn = list(range(0, n, 1))
-    colors = bokeh_colors(n)
+    # colors = bokeh_colors(n)
     colorbyframe = True
+    colors = []
+    for i in np.linspace(0, 255, n, dtype=int):
+        colors.append(palettes.Viridis256[i])
 
     # Setup tools
     hoverImage = models.HoverTool(tooltips=[('(x, y)', '$x{1.11}, $y{1.11}')], point_policy='follow_mouse')
@@ -35,8 +39,13 @@ def plotresults(cam, im, P, S, B, bbox):
 
     # Plot points
     if colorbyframe:
-        # for i in list((0, n - 1)):  # plot first and last
-        for i in range(n):  # plot all
+        # i = ~np.isnan(P[0].ravel())
+        # c = P[4].ravel()[i].astype(int)
+        # fc = [colors[i] for i in c]
+        # a.scatter(P[0].ravel()[i], P[1].ravel()[i], size=4, fill_color=fc, line_color=None)
+        # a.scatter(P[2].ravel()[i], P[3].ravel()[i], size=9, fill_color=fc, fill_alpha=0.3, line_color=None)
+        for i in list((0, n - 1)):  # plot first and last
+            # for i in range(n):  # plot all
             a.circle(P[0, :, i], P[1, :, i], color=colors[i], legend='image ' + str(i), line_width=1)
             a.circle(P[2, :, i], P[3, :, i], color=colors[i], size=8, alpha=.6)
     else:
@@ -65,10 +74,9 @@ def plotresults(cam, im, P, S, B, bbox):
     # Circles plots 2-4
     b.circle(0, 0, color=colors[-1], line_width=15)
     if colorbyframe:
-        for i in range(n):
-            b.circle(x[i], z[i], color=colors[i], line_width=2)
-            c.circle(xn[i], S[i, 7], color=colors[i], line_width=2)
-            d.circle(xn[i], S[i, 8], color=colors[i], line_width=2)
+        b.scatter(x.ravel(), z.ravel(), fill_color=colors, line_color=colors)
+        c.scatter(xn[1:], S[1:, 7], fill_color=colors[1:], line_color=colors[1:])
+        d.scatter(xn[1:], S[1:, 8], fill_color=colors[1:], line_color=colors[1:])
     else:
         b.circle(x.ravel(), z.ravel(), color=colors[0], line_width=2)
         c.circle(xn[1:], S[1:, 7], color=colors[0], line_width=2)
@@ -84,6 +92,7 @@ def plotresults(cam, im, P, S, B, bbox):
 def bokeh_colors(n):
     # https: // bokeh.pydata.org / en / latest / docs / reference / palettes.html
     # returns appropriate 10, 20 or 256 colors for plotting. n is the maximum required colors
+
     if n < 11:
         return palettes.Category10[10]
     elif n < 21:
