@@ -1,4 +1,4 @@
-import os, sys, time, cv2, plots
+import sys, time, cv2
 import numpy as np
 
 
@@ -60,7 +60,7 @@ def mainYOLO():
     # yolov2-tiny.416: 130ms
 
     # Darknet
-    import darknet as dn
+    from sandbox import darknet as dn
     net = dn.load_net(cfgPATH.encode('utf-8'), weightsPATH.encode('utf-8'), 0)
     meta = dn.load_meta(PATH.encode('utf-8') + b'cfg/coco.data')
 
@@ -144,7 +144,6 @@ def mainTF(MODEL_NAME, mname):
     tfPATH = PATH + 'tensorflow/models/research/object_detection/'
     sys.path.append(tfPATH)
     sys.path.append(tfPATH + '..')
-    from utils import ops as utils_ops
     from utils import label_map_util
     from utils import visualization_utils as vis_util
 
