@@ -109,7 +109,7 @@ def bokeh_colors(n):
 def imshow(im, im2=None, p1=None, p2=None):
     # Bokeh Plotting
     io.reset_output()
-    io.output_file('bokeh imshow.html', title='imshow')
+    io.output_file('bokeh plots.html', title='imshow')
     colorImage = (len(im.shape) == 3)
     if colorImage:
         h, w, _ = im.shape

@@ -1,7 +1,4 @@
 from fcns import *
-import time
-import scipy.io
-
 
 # import plotly.offline as py  # py.tools.set_credentials_file(username='glenn.jocher', api_key='Hcd6P8v69EAWUrdZDmpU')
 # import plotly.graph_objs as go
@@ -10,14 +7,14 @@ import scipy.io
 
 # @profile
 def vidExamplefcn():
-    n = 158  # number of frames to read
+    n = 10  # number of frames to read
     isVideo = True
     patha = '/Users/glennjocher/Downloads/DATA/VSM/'
     pathb = '/Users/glennjocher/Google Drive/MATLAB/SPEEDTRAP/'
     if isVideo:
-        filename, startframe = patha + '2018.3.11/IMG_4119.MOV', 41  # 20km/h
+        # filename, startframe = patha + '2018.3.11/IMG_4119.MOV', 41  # 20km/h
         # filename, startframe = patha + '2018.3.11/IMG_4134.MOV', 19  # 40km/h
-        # filename, startframe = patha + '2018.3.30/IMG_4238.m4v', 8  # 60km/h
+        filename, startframe = patha + '2018.3.30/IMG_4238.m4v', 8  # 60km/h
         readSpeed = 1  # read every # frames
         frames = np.arange(n) * readSpeed + startframe  # video frames to read
     else:
@@ -88,18 +85,17 @@ def vidExamplefcn():
             t, R, residuals, _ = estimateWorldCameraPose(K, q, worldPointsLicensePlate(), findR=True)
             p3 = addcol0(image2world(K, R, t, p).astype(float)) @ R + t
             R = np.eye(3)
+            B[0, 0:3] = t
             # residual = p - world2image(K, np.eye(3), np.array([0, 0, 0]), p3 + t)
 
             # initialize
-            vg = np.empty(p.shape[0], dtype=bool)  # valid global points
-            vg[:] = True
+            vg = np.ones(p.shape[0], dtype=bool)  # valid global points
             vp = insidebbox(p, boxa)
             p_ = p[vp]
             P = np.empty([5, p.shape[0], n], dtype=np.float32)  # KLT [x y valid]
             P[:] = np.nan
 
-            imfirst, dt, dr, r, speed, t0, B[0, 0:3] = im, 0, 0, 0, 0, B[0, 12], t
-            im0_small = None
+            imfirst, im0_small, dt, dr, r, speed, t0 = im, None, 0, 0, 0, 0, B[0, 12]
         else:
             # update
             p, v, im0_small = KLTmain(im, im0, im0_small, p)
@@ -131,20 +127,30 @@ def vidExamplefcn():
         P[4, vg, i] = i
         im0 = im
 
-        if True and i == 5:
-            tmsv, p3hat = fcnMSV1_t(K, P, B, vg, i)
-            p3[vg] = p3hat - t
+        if False and i == 5:
+            # B[0:i, 3:6], p3[vg] = fcnNLS_batch(K, P[:,:,0:i], p3, B[0:i, 3:6])
+            tmsv, p3hatmsv = fcnMSV1_t(K, P, B, vg, i)
+            p3[vg] = p3hatmsv - t
             vp = vg  # enable all points now
 
         # Print image[i] results
         proc_dt[i] = time.time() - tic
-        S[i, :] = (i, proc_dt[i], vg.sum(), residuals.mean(), dt, B[i, 12] - t0, dr, r, speed)
+        S[i, :] = (i, proc_dt[i], vg.sum(), residuals, dt, B[i, 12] - t0, dr, r, speed)
         print('%13g%13.3f%13g%13.3f%13.3f%13.3f%13.2f%13.2f%13.1f' % tuple(S[i, :]))
 
         # imrgb = cv2.cvtColor(imbgr,cv2.COLOR_BGR2RGB)
         # plots.imshow(cv2.cvtColor(imrgb,cv2.COLOR_BGR2HSV_FULL)[:,:,0])
     if isVideo:
         cap.release()  # Release the video capture object
+
+    if True:
+        # Batch NLS
+        B[:, 3:6], _ = fcnNLS_batch(K, P, p3, B[:, 3:6])
+        S[1:, 6] = norm(B[1:, 3:6] - B[:-1, 3:6], axis=1)
+        S[:, 7] = np.cumsum(S[:, 6])
+        S[1:, 8] = S[1:, 6] / S[1:, 4] * 3.6
+        for i in range(0, n):
+            print('%13g%13.3f%13g%13.3f%13.3f%13.3f%13.2f%13.2f%13.1f' % tuple(S[i, :]))
 
     dta = time.time() - proc_tstart
     print('\nSpeed = %.2f +/- %.2f km/h' % (S[1:, 8].mean(), S[1:, 8].std()))

@@ -187,7 +187,7 @@ if __name__ == '__main__':
     net = load_net(bPATH + b'cfg/yolov2-tiny.cfg', bPATH + b'yolov2-tiny.weights', 0)
     meta = load_meta(bPATH + b'cfg/coco.data')
     # imPATH = PATH + 'data/dog.jpg'
-    imPATH = PATH + '../Downloads/IMG_4122.JPG'
+    imPATH = PATH + '../Downloads/IMG_1443.JPG'
 
     # Darknet via filename
     tic = time.time()
@@ -206,4 +206,4 @@ if __name__ == '__main__':
 
     # Darknet from bash
     # cd darknet
-    # ./darknet detect cfg/yolov2-tiny.cfg yolov2-tiny.weights ../Downloads/IMG_4122.JPG
+    # ./darknet detect cfg/yolov2-tiny.cfg yolov2-tiny.weights ../Downloads/IMG_1443.JPG
