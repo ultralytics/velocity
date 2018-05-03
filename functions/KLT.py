@@ -111,7 +111,7 @@ def KLTmain(im, im0, im0_small, p0):
     # 2. Coarse tracking on full resolution roi https://www.mathworks.com/discovery/affine-transformation.html
     translation = p[v] - p0[v]
     T = np.eye(3, 2)
-    T[2] = translation.mean(0)  # translation-only transform
+    T[2] = mean(translation, 0)  # translation-only transform
     p, v = KLTregional(im0, im, p0, T, lk_coarse, fbt=1, translateFlag=True)
 
     if v.sum() > 10:  # good fit

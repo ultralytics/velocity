@@ -30,7 +30,7 @@ def fcnMSV1_t(K, P, B, vg, ii):  # solves for 1 camera translation
 
         delta = np.linalg.inv(JTJ + mdm) @ JT @ (z - zhat)  # * min(((i + 1) * .1) ** 2, 1)
         res[i] = rms(z - zhat)
-        # print('Residual %g,    Params: %s' % (rms(z-zhat), x[:]))
+        # print('%g: f=%g, x=%s' % (i, rms(z - zhat), rms(delta)))
         x = x + delta
         xi[i] = x
         if rms(delta) < 1E-8:
@@ -78,7 +78,7 @@ def fcnMSV2_t(K, P, B, vg, i):  # solves for 1 camera translation
         JT = (JT - zhat) / dx
         JTJ = JT @ JT.T  # J.T @ J
         delta = np.linalg.inv(JTJ + mdm) @ JT @ residual * min(((i + 1) * .01) ** 2, 1)
-        print('Residual %g,    Params: %s' % (residual.mean(), x[:]))
+        print('%g: f=%g, x=%s' % (i, rms(z - zhat), rms(delta)))
         x = x + delta
         if rms(delta) < 1E-8:
             break
@@ -171,7 +171,7 @@ def fcnMSV1direct_t(K, P, B, vg, i):  # solves for 1 camera translation
     def loss_fn(x, u0, U, K, z):
         b0 = fcn2vintercept(np.vstack((u0[:-1], -x)), U) + x
         zhat = fzK(b0, K)
-        return ((z - zhat) ** 2).mean() ** 0.5
+        return rms(z - zhat)
 
     nf = i + 1
     ng = vg.sum()
@@ -264,7 +264,7 @@ def fcnMSV1direct_t(K, P, B, vg, i):  # solves for 1 camera translation
         x = x - delta  # updates the parameters
         print('Residual %g,    Params: %s' % (r[i], x[:]))
         xi[i] = x
-        if np.mean(delta ** 2) ** 0.5 < 1E-5:  # convergence check
+        if rms(delta) < 1E-5:  # convergence check
             break
 
     py.plot([go.Scatter(x=xi[:i, 0], y=xi[:i, 2], mode='markers',

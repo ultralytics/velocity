@@ -8,7 +8,7 @@ def estimateWorldCameraPose(K, p, p3, t=np.array([0, 0, 1]), R=np.eye(3), findR=
     # Re, te = extrinsicsPlanar(p, p3, K)
 
     # Nonlinear Least Squares
-    x0 = np.concatenate([dcm2rpy(R), t])
+    x0 = np.concatenate((dcm2rpy(R), t))
     if findR is True:
         R, t = fcnNLS_Rt(K.astype(float), p.astype(float), p3, x0)
     else:
@@ -20,7 +20,7 @@ def estimateWorldCameraPose(K, p, p3, t=np.array([0, 0, 1]), R=np.eye(3), findR=
 
     # Residuals
     p_proj = world2image(K, R, t, p3)
-    residuals = norm(p - p_proj)
+    residuals = rms(p - p_proj)
     return t, R, residuals, p_proj
 
 
@@ -30,9 +30,7 @@ def extrinsicsPlanar(imagePoints, worldPoints, K):  # Copy of MATLAB function by
 
     # Compute homography.
     H, inliers = cv2.findHomography(worldPoints, imagePoints, method=0)  # methods = 0, RANSAC = 8, LMEDS, RHO
-    h1 = H[:, 0]
-    h2 = H[:, 1]
-    h3 = H[:, 2]
+    h1, h2, h3 = H[:, 0], H[:, 1], H[:, 2]
 
     A = K.T
     # Ainv = np.linalg.inv(A)
@@ -102,8 +100,6 @@ def fcnNLS_t(K, p, pw, x):
         JT = (JT - zhat) / dx  # J Transpose
         JTJ = JT @ JT.T  # J.T @ J
         delta = np.linalg.inv(JTJ + mdm) @ JT @ (z - zhat) * min(((i + 1) * .2) ** 2, 1)
-        # print('Residual %g,    Params: %s' % (rms(z-zhat), x[:]))
-
         x = x + delta
         if rms(delta) < 1E-8:
             break
@@ -155,7 +151,6 @@ def fcnNLS_Rt(K, p, pw, x):
 
         JTJ = JT @ JT.T  # J.T @ J
         delta = np.linalg.inv(JTJ + mdm) @ JT @ (z - zhat) * min(((i + 1) * .2) ** 2, 1)
-        #         print('Residual %g,    Params: %s' % (rms(z-zhat), x[:]))
         x = x + delta
         if rms(delta) < 1E-8:
             break
@@ -167,8 +162,7 @@ def fcnNLS_Rt(K, p, pw, x):
     return R, t
 
 
-# @profile
-def fcnNLS_batch(K, P, pw, cw):
+def fcnNLS_batch(K, P, pw, cw):  # solves for pxyz, cxyz[1:], crpy[1:]
     v = np.isfinite(P[4]).sum(1) == P.shape[2]  # valid tracks ( > 2 frames long)
     P, pw = P[:, v], pw[v]
     _, nt, nc = P.shape  # number of tiepoints, number of cameras
@@ -181,125 +175,127 @@ def fcnNLS_batch(K, P, pw, cw):
     z = np.concatenate((z[0::2], z[1::2]))
     nanz = np.isnan(z)
     z[nanz] = 0
-
     crpy = np.zeros((nc, 3))
     x = np.concatenate((pw, cw[1:], crpy)).ravel()  # [tp_pos, cam_pos, cam_rpy, K3]
+    range_cal = norm(cw[1])
 
-    # @profile
     def fzKautograd_batch(x, K, nc, nt):  # for autograd
         pw = x[0:nt * 3].reshape(nt, 3)
-
-        # zhat = np.zeros((0, 3))
         alist = [pw]  # = pw @ np.eye(3) + np.zeros((1,3)), camera 1 fixed
         for i in range(nc):
             ia = nt * 3 + i * 3  # pos start
             ib = nc * 3 + ia  # rpy start
             pos = x[ia:ia + 3]
             rpy = x[ib:ib + 3]
-            pnew = pw @ rpy2dcm(rpy) + pos
-            # zhat = np.concatenate((zhat, pnew))
-            alist.append(pnew)
-        zhat = np.asarray(alist).reshape(((nc + 1) * nt, 3))
-        return pscale(zhat @ K).ravel('F')
+            alist.append(pw @ rpy2dcm(rpy) + pos)
+        phat = np.asarray(alist).reshape(((nc + 1) * nt, 3))
+        return pscale(phat @ K).ravel('F')
 
     jdx = 1E-6  # for numerical derivatives
     max_iter = 10
     mdm = np.eye(nx) * 1  # marquardt damping matrix (eye times damping coeficient)
     # jfunc = jacobian(fzKautograd_batch)
-    # ov, zv = np.ones(nt), np.zeros(nt)
     for i in range(max_iter - 1):
         tic = time.time()
-        # pw = x[0:nt * 3].reshape(nt, 3)  # tp pos
-        # cw = x[nt * 3:nt*3 + nc*3].reshape(nc, 3)  # camera pos
-        # ca = x[nt * 3+nc*3:nt * 3 + nc * 3*2].reshape(nc, 3)  # camera rpy
-
-        # zhat = np.zeros((0, 3))
-        # for j in range(nc):
-        #     ia = nt * 3 + j * 3  # pos start
-        #     ib = nc * 3 + ia  # rpy start
-        #     ic = nt * 2 * j  # tp start
-        #     pos = x[ia:ia + 3]
-        #     rpy = x[ib:ib + 3]
-        #     zhat = np.concatenate((zhat, pw @ rpy2dcm(rpy) + pos))
-        #
-        #     f = K[0, 0]  # focal length (pixels)
-        #     dx = pos[0] - pw[:, 0]
-        #     dy = pos[1] - pw[:, 1]
-        #     dz = pos[2] - pw[:, 2]
-        #     sr = np.sin(rpy[0])
-        #     sp = np.sin(rpy[1])
-        #     sy = np.sin(rpy[2])
-        #     cr = np.cos(rpy[0])
-        #     cp = np.cos(rpy[1])
-        #     cy = np.cos(rpy[2])
-        #     k1 = cp * cy * dx - sp * dz + cp * sy * dy
-        #     k2 = cr * sy - cy * sp * sr
-        #     k3 = cr * cy + sp * sr * sy
-        #     k4 = sr * sy + cr * cy * sp
-        #     k5 = cy * sr - cr * sp * sy
-        #     k6 = cp * sr * dz
-        #     k7 = cp * cr * dz
-        #     f0 = f / k1
-        #     f1 = f / (k1 * k1)
-        #
-        #     dzdtxyz = np.concatenate((
-        #         k2 * f0 + cp * cy * (k3 * dy - k2 * dx + k6) * f1,
-        #         cp * cy * (k4 * dx - k5 * dy + k7) * f1 - k4 * f0,
-        #         cp * sy * (k3 * dy - k2 * dx + k6) * f1 - k3 * f0,
-        #         k5 * f0 + cp * sy * (k4 * dx - k5 * dy + k7) * f1,
-        #         - cp * sr * f0 - sp * (k3 * dy - k2 * dx + k6) * f1,
-        #         - cp * cr * f0 - sp * (k4 * dx - k5 * dy + k7) * f1
-        #     )).reshape((3, nt * 2))
-        #
-        #     dzdcrpy = np.concatenate((
-        #         (k4 * dx - k5 * dy + k7) * f0,
-        #         - (k3 * dy - k2 * dx + k6) * f0,
-        #         (cp * cy * sr * dx - sp * sr * dz + cp * sr * sy * dy) * f0 +
-        #         (k3 * dy - k2 * dx + k6) * (cp * dz + cy * sp * dx + sp * sy * dy) * f1,
-        #         (cp * cr * cy * dx - cr * sp * dz + cp * cr * sy * dy) * f0 +
-        #         (k4 * dx - k5 * dy + k7) * (cp * dz + cy * sp * dx + sp * sy * dy) * f1,
-        #         - (k3 * dx + k2 * dy) * f0 - (cp * cy * dy - cp * sy * dx) * (k3 * dy - k2 * dx + k6) * f1,
-        #         (k5 * dx + k4 * dy) * f0 - (cp * cy * dy - cp * sy * dx) * (k4 * dx - k5 * dy + k7) * f1
-        #     )).reshape((3, nt * 2))
-        #
-        #     dzdK = np.concatenate((
-        #         ov, zv,
-        #         zv, ov,
-        #         (k3 * dy - k2 * dx + k6) / k1, (k4 * dx - k5 * dy + k7) / k1
-        #     )).reshape((3, nt * 2))
-        #
-        #     rows = np.mod(np.arange(nt * 3 * 2, dtype=int), nt * 3)
-        #     cols = np.floor(np.arange(0, nt * 2, 1 / 3)).astype(int)
-        #     JT[rows, cols] = dzdtxyz.ravel()
-        #     JT[ia:ia + 3, ic:ic + nt * 2] = -dzdtxyz  # dzdcxyz
-        #     JT[ib:ib + 3, ic:ic + nt * 2] = dzdcrpy
-        #     JT[nx - 3:nx, ic:ic + nt * 2] = dzdK
-        # zhat = fzK(zhat, K).ravel('F')
-
         zhat = fzKautograd_batch(x, K, nc, nt)
         zhat[nanz] = 0
 
-        JT = np.zeros((nx, nz))
         # JT = jfunc(x, K, nc, nt, nx).T  # autograd jacobian (super slow!!)
+        JT = np.zeros((nx, nz))
         for j in range(nx):
             x1 = x.copy()
             x1[j] += jdx
-            JT[j] = (fzKautograd_batch(x1, K, nc, nt) - zhat) / jdx
+            JT[j] = fzKautograd_batch(x1, K, nc, nt)
+        JT = (JT - zhat) / jdx
 
-        JTJ = JT @ JT.T  # J.T @ J
-        delta = np.linalg.inv(JTJ + mdm) @ JT @ (z - zhat) * .8
-        print('%g: %.3fs, f=%g, x=%s' % (i, time.time() - tic, rms(z - zhat), rms(delta)))
+        delta = np.linalg.inv(JT @ JT.T + mdm) @ JT @ (z - zhat) * .9
         x = x + delta
+        # x[nt * 3:nt * 3 + nc * 3] *= range_cal / norm(x[nt * 3:nt * 3 + 3])  # calibrate scale
+        print('%g: %.3fs, f=%g, x=%s' % (i, time.time() - tic, rms(z - zhat), rms(delta)))
         if rms(delta) < 1E-7:
             break
     if i == max_iter:
         print('WARNING: fcnNLS_batch() reaching max iterations!')
-    # print('%i steps, residual rms = %.5f' % (i,rms(z-zhat)))
+    print('fcnNLS_batch done in %g steps, %.3fs, f=%g' % (i, time.time() - tic, rms(z - zhat)))
 
-    pw = x[0:nt * 3].reshape(nt, 3)  # tp pos
-    cw = x[nt * 3:nt * 3 + nc * 3].reshape(nc, 3)  # camera pos
-    ca = x[nt * 3 + nc * 3:nt * 3 + nc * 3 * 2].reshape(nc, 3)  # camera rpy
-    print(ca)
-
+    j = nt * 3
+    pw = x[0:j].reshape(nt, 3)  # tp pos
+    cw = x[j:j + nc * 3].reshape(nc, 3)  # cam pos
     cw = np.concatenate((np.zeros((1, 3)), cw), 0)
+    ca = x[j + nc * 3:j + nc * 3 * 2].reshape(nc, 3)  # cam rpy
+    return cw, pw
+
+
+def fcnNLS_batch2(K, P, pw, cw):  # solves for pxyz, [el, az, c_ranges[1:]]
+    v = np.isfinite(P[4]).sum(1) == P.shape[2]  # valid tracks ( > 2 frames long)
+    P, pw = P[:, v], pw[v]
+    _, nt, nc = P.shape  # number of tiepoints, number of cameras
+    nc = nc - 1  # do not fit camera 1 R=eye(3), t=[0,0,0]
+    nx = nt * 3 + nc + 2 + 3  # number of parameters
+    nz = nt * (nc + 1) * 2  # number of measurements
+    K = K.astype(float)
+    C = cam2ned()
+
+    z = P[0:2].ravel('F')
+    z = np.concatenate((z[0::2], z[1::2]))
+    nanz = np.isnan(z)
+    z[nanz] = 0
+
+    crpy = np.zeros(3)
+    sc = cc2sc(C @ (cw[1] - cw[0]))  # cam 2 ned
+    ranges = np.arange(1, nc + 1) * sc[0]
+    x = np.concatenate((pw.ravel(), crpy, sc[1:3], ranges))  # [tp_pos, cam_jointrpy, elaz, cam_ranges]
+
+    def fzKautograd_batch(x, K, nc, nt):  # for autograd
+        j = nt * 3
+        R = rpy2dcm(x[j:j + 3])
+        pc = x[0:j].reshape(nt, 3) @ R  # tiepoints in camera frame
+        sc = np.zeros((nc, 3))
+        sc[:, 0] = x[j + 5:j + 5 + nc]  # ranges
+        sc[:, 1] = x[j + 3]  # el
+        sc[:, 2] = x[j + 4]  # az
+        offset = sc2cc(sc) @ C  # ned to cam
+        alist = [pc]  # = pw @ np.eye(3) + np.zeros((1,3)), camera 1 fixed
+        for i in range(nc):
+            alist.append(pc + offset[i])
+        phat = np.asarray(alist).reshape(((nc + 1) * nt, 3))
+        return pscale(phat @ K).ravel('F')
+
+    jdx = 1E-6  # for numerical derivatives
+    max_iter = 20
+    mdm = np.eye(nx) * 1  # marquardt damping matrix (eye times damping coeficient)
+    # jfunc = jacobian(fzKautograd_batch)
+    for i in range(max_iter - 1):
+        tic = time.time()
+        zhat = fzKautograd_batch(x, K, nc, nt)
+        zhat[nanz] = 0
+
+        # JT = jfunc(x, K, nc, nt, nx).T  # autograd jacobian (super slow!!)
+        JT = np.zeros((nx, nz))
+        for j in range(nx):
+            x1 = x.copy()
+            x1[j] += jdx
+            JT[j] = fzKautograd_batch(x1, K, nc, nt)
+        JT = (JT - zhat) / jdx
+
+        delta = np.linalg.inv(JT @ JT.T + mdm) @ JT @ (z - zhat) * .9
+        x = x + delta
+        # calibrate ranges
+        # x[nt * 3 + 5:nt * 3 + 5 + nc] = x[nt * 3 + 5:nt * 3 + 5 + nc] / x[nt * 3 + 5:nt * 3 + 6] * ranges[0]
+        # print('%g: %.3fs, f=%g, x=%s' % (i, time.time() - tic, rms(z - zhat), rms(delta)))
+        if rms(delta) < 1E-7:
+            break
+    if i == max_iter:
+        print('WARNING: fcnNLS_batch() reaching max iterations!')
+    print('fcnNLS_batch2 done in %g steps, %.3fs, f=%g' % (i, time.time() - tic, rms(z - zhat)))
+
+    j = nt * 3
+    sc = np.zeros((nc, 3))
+    sc[:, 0] = x[j + 5:j + 5 + nc]  # ranges
+    sc[:, 1] = x[j + 3]  # el
+    sc[:, 2] = x[j + 4]  # az
+    pw = x[0:j].reshape(nt, 3)  # tp pos
+    cw = sc2cc(sc) @ C  # cam pos
+    cw = np.concatenate((np.zeros((1, 3)), cw), 0)
+    ca = x[j:j + 3]  # cam rpy
     return cw, pw

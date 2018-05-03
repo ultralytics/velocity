@@ -3,12 +3,9 @@ import cv2  # pip install opencv-python opencv-contrib-python
 import numpy as np
 import scipy.io
 # import tensorflow as tf
-# import torch
+import torch
 import time
 
-import plotly.offline as py
-import plotly.graph_objs as go
-import plots
 
 np.set_printoptions(linewidth=320, formatter={'float_kind': '{:11.5g}'.format})  # format short g, %precision=5
 
@@ -95,21 +92,34 @@ def elaz(x):  # cartesian coordinate to spherical el and az angles
 
 
 def cc2sc(x):
-    s = np.zeros_like(x)
-    r = norm(x)
-    s[0] = r
-    s[1] = np.arcsin(-x[2] / r)
-    s[2] = np.arctan2(x[1], x[0])
+    s = np.zeros(x.shape)
+    if x.shape[0] == 3:  # by columns
+        r = norm(x, axis=0)
+        s[0] = r
+        s[1] = np.arcsin(-x[2] / r)
+        s[2] = np.arctan2(x[1], x[0])
+    else:  # by rows
+        r = norm(x, axis=1)
+        s[:, 0] = r
+        s[:, 1] = np.arcsin(-x[:, 2] / r)
+        s[:, 2] = np.arctan2(x[:, 1], x[:, 0])
     return s
 
 
 def sc2cc(s):  # spherical to cartesian [range, el, az] to [x, y z]
-    x = np.zeros_like(s)
-    r = s[0]
-    k1 = r * np.cos(s[1])
-    x[0] = k1 * np.cos(s[2])
-    x[1] = k1 * np.sin(s[2])
-    x[2] = -r * np.sin(s[1])
+    x = np.zeros(s.shape)
+    if s.shape[0] == 3:  # by columns
+        r = s[0]
+        a = r * np.cos(s[1])
+        x[0] = a * np.cos(s[2])
+        x[1] = a * np.sin(s[2])
+        x[2] = -r * np.sin(s[1])
+    else:  # by rows
+        r = s[:, 0]
+        a = r * np.cos(s[:, 1])
+        x[:, 0] = a * np.cos(s[:, 2])
+        x[:, 1] = a * np.sin(s[:, 2])
+        x[:, 2] = -r * np.sin(s[:, 1])
     return x
 
 
@@ -131,7 +141,7 @@ def fcnsigmarejection(x, srl=3.0, ni=3):
     x = x.ravel()
     for m in range(ni):
         s = x.std() * srl
-        mu = x.mean()
+        mu = mean(x)
         vi = (x < mu + s) & (x > mu - s)
         x = x[vi]
         v[v] = vi
