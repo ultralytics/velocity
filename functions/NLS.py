@@ -91,7 +91,7 @@ def fcnNLS_t(K, p, pw, x):
     dx1, dx2, dx3 = [dx, 0, 0], [0, dx, 0], [0, 0, dx]
     n = pw.shape[0]
     z = p.ravel()
-    max_iter = 100
+    max_iter = 30
     mdm = np.eye(3) * 1  # marquardt damping matrix (eye times damping coeficient)
     for i in range(max_iter):
         b0 = pw + x[0:4]
@@ -103,7 +103,7 @@ def fcnNLS_t(K, p, pw, x):
         x = x + delta
         if rms(delta) < 1E-8:
             break
-    if i == (max_iter - 1):
+    else:
         print('WARNING: fcnNLS_t() reaching max iterations!')
     # print('%i steps, residual rms = %.5f' % (i,rms(z-zhat)))
     return x.astype(np.float32)
@@ -129,7 +129,7 @@ def fcnNLS_Rt(K, p, pw, x):
     dx1, dx2, dx3 = [dx, 0, 0], [0, dx, 0], [0, 0, dx]
     n = pw.shape[0]
     z = p.ravel()
-    max_iter = 100
+    max_iter = 30
     mdm = np.eye(6) * 1  # marquardt damping matrix (eye times damping coeficient)
     # jfunc = jacobian(fzKautograd_Rt)
     for i in range(max_iter):
@@ -154,7 +154,7 @@ def fcnNLS_Rt(K, p, pw, x):
         x = x + delta
         if rms(delta) < 1E-8:
             break
-    if i == (max_iter - 1):
+    else:
         print('WARNING: fcnNLS_Rt() reaching max iterations!')
     R = rpy2dcm(x[0:3]).astype(np.float32)
     t = x[3:6].astype(np.float32)
@@ -195,7 +195,7 @@ def fcnNLS_batch(K, P, pw, cw):  # solves for pxyz, cxyz[1:], crpy[1:]
     max_iter = 10
     mdm = np.eye(nx) * 1  # marquardt damping matrix (eye times damping coeficient)
     # jfunc = jacobian(fzKautograd_batch)
-    for i in range(max_iter - 1):
+    for i in range(max_iter):
         tic = time.time()
         zhat = fzKautograd_batch(x, K, nc, nt)
         zhat[nanz] = 0
@@ -214,7 +214,7 @@ def fcnNLS_batch(K, P, pw, cw):  # solves for pxyz, cxyz[1:], crpy[1:]
         print('%g: %.3fs, f=%g, x=%s' % (i, time.time() - tic, rms(z - zhat), rms(delta)))
         if rms(delta) < 1E-7:
             break
-    if i == max_iter:
+    else:
         print('WARNING: fcnNLS_batch() reaching max iterations!')
     print('fcnNLS_batch done in %g steps, %.3fs, f=%g' % (i, time.time() - tic, rms(z - zhat)))
 
@@ -265,7 +265,7 @@ def fcnNLS_batch2(K, P, pw, cw):  # solves for pxyz, [el, az, c_ranges[1:]]
     max_iter = 20
     mdm = np.eye(nx) * 1  # marquardt damping matrix (eye times damping coeficient)
     # jfunc = jacobian(fzKautograd_batch)
-    for i in range(max_iter - 1):
+    for i in range(max_iter):
         tic = time.time()
         zhat = fzKautograd_batch(x, K, nc, nt)
         zhat[nanz] = 0
@@ -285,7 +285,7 @@ def fcnNLS_batch2(K, P, pw, cw):  # solves for pxyz, [el, az, c_ranges[1:]]
         # print('%g: %.3fs, f=%g, x=%s' % (i, time.time() - tic, rms(z - zhat), rms(delta)))
         if rms(delta) < 1E-7:
             break
-    if i == max_iter:
+    else:
         print('WARNING: fcnNLS_batch() reaching max iterations!')
     print('fcnNLS_batch2 done in %g steps, %.3fs, f=%g' % (i, time.time() - tic, rms(z - zhat)))
 
