@@ -38,12 +38,18 @@ def splitdata(x, y, train=0.7, validate=0.15, test=0.15, shuffle=False):
     return x[:i], y[:i], x[i:j], y[i:j], x[j:k], y[j:k]  # xy train, xy validate, xy test
 
 
-# http://pytorch.org/tutorials/beginner/pytorch_with_examples.html#pytorch-tensors
-@profile
+def nnstd(r, ys):
+    r = r.detach()
+    loss = (r ** 2).mean().cpu().numpy()
+    std = r.std(0).cpu().numpy() * ys
+    return loss, std
+
+
+# @profile
 def runexample():
     cuda = torch.cuda.is_available()
     torch.manual_seed(1)
-    path = '/Users/glennjocher/Google Drive/DATA/'
+    path = '/Users/glennjocher/Google Drive/data/'
 
     H = [76, 23, 7]
     model = torch.nn.Sequential(
@@ -58,7 +64,7 @@ def runexample():
     # H = [128, 32, 8]
     # H = [169, 56, 18, 6]
 
-    lr = 0.005
+    lr = 0.002
     eps = 0.001
     batch_size = 10000
     epochs = 50000
@@ -69,7 +75,7 @@ def runexample():
     device = torch.device('cuda:0' if cuda else 'cpu')
     print('Running on %s\n%s' % (device.type, torch.cuda.get_device_properties(0) if cuda else ''))
 
-    mat = scipy.io.loadmat(path + 'MLTOFdataset.mat')
+    mat = scipy.io.loadmat(path + 'waveformdata.mat')
     x = mat['Ib']
     y = mat['T'][:, 0:2] - mat['tbias'][:, 0:2]
     nb, D_in = x.shape
@@ -124,32 +130,37 @@ def runexample():
         loss = criteria(y_pred, y)
         L[i, 0] = loss.item()  # / y.numel()  # train
         L[i, 1] = criteria(model(xv), yv).item()  # / yv.numel()  # validate
+        L[i, 2] = criteria(model(xt), yt).item()  # / yv.numel()  # validate
 
         if i > 2000:  # validation checks
             if L[i, 1] < best[1]:
                 best = (i, L[i, 1], copy.deepcopy(model.state_dict()))
             if (i - best[0]) > validation_checks:
-                print('\n%g validation checks exceeded at epoch %g.\n' % (validation_checks, i))
+                print('\n%g validation checks exceeded at epoch %g.' % (validation_checks, i))
                 break
 
         if i % 1000 == 0:  # print and save progress
-            rv = (model(xv) - yv).std(0).detach().cpu().numpy() * ys  # validate residual
-            scipy.io.savemat(path + name + '.mat', dict(best=best[0:2], L=L, name=name))
-            print('%.3fs' % (time.time() - ticb), i, L[i], rv)
+            # rv = (model(xv) - yv).std(0).detach().cpu().numpy() * ys  # validate residual
+            scipy.io.savemat(path + name + '.mat', dict(bestepoch=best[0], loss=L[best[0]], L=L, name=name))
+            print('%.3fs' % (time.time() - ticb), i, L[i])
             ticb = time.time()
 
         # Zero gradients, perform a backward pass, and update the weights.
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-    torch.save(best[2], path + name + '.pt')
+    else:
+        print('WARNING: Validation loss still decreasing after %g epochs (train longer).' % (i + 1))
+    torch.save(best[2], path + 'models/' + name + '.pt')
     model.load_state_dict(best[2])
     dt = time.time() - tica
 
     print('\nFinished %g epochs in %.3fs (%.3f epochs/s)\nBest results from epoch %g:' % (i, dt, i / dt, best[0]))
+    loss, std = np.zeros(3), np.zeros((3, D_out))
     for i, (xi, yi) in enumerate(((x, y), (xv, yv), (xt, yt))):
-        r = (model(xi) - yi)
-        print('%.5f %s %s' % ((r ** 2).mean(), r.std(0).detach().cpu().numpy()[:] * ys, labels[i]))
+        loss[i], std[i] = nnstd(model(xi) - yi, ys)
+        print('%.5f %s %s' % (loss[i], std[i, :], labels[i]))
+    scipy.io.savemat(path + name + '.mat', dict(bestepoch=best[0], loss=loss, std=std, L=L, name=name))
 
     data = []
     for i, s in enumerate(['train', 'validate', 'test']):
