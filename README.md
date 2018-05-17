@@ -27,7 +27,7 @@ MATLAB >= 2018a with the following toolboxes:
 - ```Statistics and Machine Learning Toolbox```
 - ```Signal Processing Toolbox```
 
-and the following repository cloned (```$ git clone https://github.com/ultralytics/matlab-common```) and added to the MATLAB path (```>> apppath(genpath('/matlab-common'))```)
+and the common functions repository cloned (```$ git clone https://github.com/ultralytics/matlab-common```) and added to the MATLAB path (```>> apppath(genpath('/matlab-common'))```)
 
 # Running
 Various methods. Please contact for further information.
