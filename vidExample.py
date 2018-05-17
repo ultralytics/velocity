@@ -1,6 +1,5 @@
 from fcns import *
 
-
 # @profile
 def vidExamplefcn():
     n = 10  # number of frames to read
