@@ -44,13 +44,13 @@ def plotresults(cam, im, P, S, B, bbox):
         # fc = [colors[i] for i in c]
         # a.scatter(P[0].ravel()[i], P[1].ravel()[i], size=4, fill_color=fc, line_color=None)
         # a.scatter(P[2].ravel()[i], P[3].ravel()[i], size=9, fill_color=fc, fill_alpha=0.3, line_color=None)
-        for i in list((0, n - 1)):  # plot first and last
+        for i in range(n - 1):  # list((0, n - 1)):  # plot first and last
             # for i in range(n):  # plot all
             a.circle(P[0, :, i], P[1, :, i], color=colors[i], legend='image ' + str(i), line_width=1)
-            a.circle(P[2, :, i], P[3, :, i], color=colors[i], size=8, alpha=.6)
+            a.circle(P[2, :, i], P[3, :, i], color=colors[i], size=10, alpha=.6)
     else:
         a.circle(P[0].ravel(), P[1].ravel(), color=colors[0], legend='Points', line_width=2)
-        a.circle(P[2].ravel(), P[3].ravel(), color=colors[1], legend='Reprojections', size=8, alpha=.6)
+        a.circle(P[2].ravel(), P[3].ravel(), color=colors[1], legend='Reprojections', size=10, alpha=.6)
 
     # Plot 2 - 3d
     x, y, z = np.split(B[:, :3], 3, axis=1)
@@ -74,9 +74,9 @@ def plotresults(cam, im, P, S, B, bbox):
     # Circles plots 2-4
     b.circle(0, 0, color=colors[-1], line_width=15)
     if colorbyframe:
-        b.scatter(x.ravel(), z.ravel(), fill_color=colors, line_color=colors)
-        c.scatter(xn[1:], S[1:, 7], fill_color=colors[1:], line_color=colors[1:])
-        d.scatter(xn[1:], S[1:, 8], fill_color=colors[1:], line_color=colors[1:])
+        b.scatter(x.ravel(), z.ravel(), fill_color=colors, line_color=colors, size=10)
+        c.scatter(xn[1:], S[1:, 7], fill_color=colors[1:], line_color=colors[1:], size=10)
+        d.scatter(xn[1:], S[1:, 8], fill_color=colors[1:], line_color=colors[1:], size=10)
     else:
         b.circle(x.ravel(), z.ravel(), color=colors[0], line_width=2)
         c.circle(xn[1:], S[1:, 7], color=colors[0], line_width=2)
