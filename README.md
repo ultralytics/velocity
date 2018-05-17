@@ -7,8 +7,6 @@ http://www.ultralytics.com  
 # Description
 The https://github.com/ultralytics/velocity repo contains experimental Machine Learning (ML) imagery analysis efforts.
 
-<img src="https://github.com/ultralytics/velocity/blob/master/results.jpg"> 
-
 # Requirements
 Python 3.6 or later with the following packages:  
 
@@ -31,6 +29,8 @@ and the common functions repository cloned (```$ git clone https://github.com/ul
 
 # Running
 Various methods. Please contact for further information.
+
+<img src="https://github.com/ultralytics/velocity/blob/master/results.jpg"> 
 
 # Contact
 For questions or comments please contact Glenn Jocher at glenn.jocher@ultralytics.com or visit us at http://www.ultralytics.com/contact
