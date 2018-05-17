@@ -19,7 +19,7 @@ Python 3.6 or later with the following packages:
 - ```torchvision```
 - ```tensorflow``` >= 1.8.0
 - ```opencv-python```
-- ```exifread
+- ```exifread```
 - ```bokeh``` (optional)
 - ```plotly``` (optional)
 
