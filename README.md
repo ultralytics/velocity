@@ -20,12 +20,10 @@ Python 3.6 or later with the following packages:
 - `bokeh` (optional)
 - `plotly` (optional)
 
-MATLAB >= 2018a with the following toolboxes: 
+[MATLAB](https://www.mathworks.com/products/matlab.html) >= 2018a with a common functions repo `$ git clone https://github.com/ultralytics/common-matlab` added to the MATLAB path `>> addpath(genpath('/common-matlab'))` and the following toolbox installed:
 
 - `Statistics and Machine Learning Toolbox`
 - `Signal Processing Toolbox`
-
-and a functions repository cloned `$ git clone https://github.com/ultralytics/matlab-common` and added to the MATLAB path `>> addpath(genpath('/matlab-common'))`
 
 # Running
 Various methods. Please contact for further information.
