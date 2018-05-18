@@ -20,7 +20,7 @@ Python 3.6 or later with the following packages:
 - `bokeh` (optional)
 - `plotly` (optional)
 
-[MATLAB](https://www.mathworks.com/products/matlab.html) >= 2018a with a common functions repo `$ git clone https://github.com/ultralytics/common-matlab` added to the MATLAB path `>> addpath(genpath('/common-matlab'))` and the following toolbox installed:
+[MATLAB](https://www.mathworks.com/products/matlab.html) >= 2018a with a common functions repo `$ git clone https://github.com/ultralytics/functions-matlab` added to the MATLAB path `>> addpath(genpath('/functions-matlab'))` and the following toolboxes:
 
 - `Statistics and Machine Learning Toolbox`
 - `Signal Processing Toolbox`
