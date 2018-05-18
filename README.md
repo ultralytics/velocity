@@ -10,22 +10,22 @@ The https://github.com/ultralytics/velocity repo contains experimental Machine L
 # Requirements
 Python 3.6 or later with the following packages:  
 
-- ```numpy```
-- ```scipy```
-- ```torch``` >= 0.4.0
-- ```torchvision```
-- ```tensorflow``` >= 1.8.0
-- ```opencv-python```
-- ```exifread```
-- ```bokeh``` (optional)
-- ```plotly``` (optional)
+- `numpy`
+- `scipy`
+- `torch` >= 0.4.0
+- `torchvision`
+- `tensorflow` >= 1.8.0
+- `opencv-python`
+- `exifread`
+- `bokeh` (optional)
+- `plotly` (optional)
 
 MATLAB >= 2018a with the following toolboxes: 
 
-- ```Statistics and Machine Learning Toolbox```
-- ```Signal Processing Toolbox```
+- `Statistics and Machine Learning Toolbox`
+- `Signal Processing Toolbox`
 
-and the common functions repository cloned (```$ git clone https://github.com/ultralytics/matlab-common```) and added to the MATLAB path (```>> apppath(genpath('/matlab-common'))```)
+and a functions repository cloned `$ git clone https://github.com/ultralytics/matlab-common` and added to the MATLAB path `>> addpath(genpath('/matlab-common'))`
 
 # Running
 Various methods. Please contact for further information.
