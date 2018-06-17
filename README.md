@@ -8,7 +8,7 @@ http://www.ultralytics.com  
 The https://github.com/ultralytics/velocity repo contains experimental Machine Learning (ML) imagery analysis efforts.
 
 # Requirements
-Python 3.6 or later with the following packages:  
+Python 3.6 or later with the following `pip3 install -U -r requirements.txt` packages:  
 
 - `numpy`
 - `scipy`
