@@ -1,3 +1,24 @@
+# Repo-specific GitIgnore ----------------------------------------------------------------------------------------------
+*.png
+*.tif
+*.heic
+*.JPG
+*.PNG
+*.TIF
+*.HEIC
+*.weights
+*.pt
+*.mat
+data/*
+
+output
+__pycache__
+checkpoints
+*esults.txt
+
+
+
+
 # GitHub Python GitIgnore ----------------------------------------------------------------------------------------------
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -187,7 +187,7 @@ if __name__ == '__main__':
     net = load_net(bPATH + b'cfg/yolov2-tiny.cfg', bPATH + b'yolov2-tiny.weights', 0)
     meta = load_meta(bPATH + b'cfg/coco.data')
     # imPATH = PATH + 'data/dog.jpg'
-    imPATH = PATH + '../Downloads/IMG_1443.JPG'
+    imPATH = PATH + '../Downloads/7.jpg'
 
     # Darknet via filename
     tic = time.time()

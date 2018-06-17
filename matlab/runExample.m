@@ -1,11 +1,14 @@
 function [] = runExample()
 %this file imports a short movie of cars in Viña del Mar to track speeds
-clc; clear; close all; pname=fcnpathm1(mfilename('fullpath')); cd(pname); format short g
+clc; clear; close all; 
+% pname=fcnpathm1(mfilename('fullpath')); cd(pname); 
+format short g
 
 %VIDEO --------------------------------------------------------------------
 %[fname, pname] = uigetfile({'*.mov';'*.m4v'},'Select images','MultiSelect','off');
 %startFrame = 8;
 
+addpath(genpath('/Users/glennjocher/Downloads/DATA'))
 %load IMG_4119.MOV.mat; %frame 42 20km/h
 load IMG_4134.MOV.mat; %frame 19 40km/h
 %load IMG_4238.m4v.mat; %frame 8 60km/h
@@ -118,29 +121,29 @@ for i=1:n
     Pa{i}=p; P{i}=p(valid,:); Pp{i}=pProj;
     
     
-    %N Vector Intercept
-    if i==4
-        ux1 = zeros(i,sum(valid)); uy1=ux1; uz1=ux1;
-        for j=1:i
-            [~, u] = pixel2angle(cam.params.IntrinsicMatrix, Pa{j}(valid,:));
-            ux1(j,:)=u(:,1);  uy1(j,:)=u(:,2);  uz1(j,:)=u(:,3); 
-        end
-        u0 = -(B(1:i,1:3) - B(1,1:3));
-        C2 = fcn2vintercept(u0,ux1,uy1,uz1);% * cam2ned';
-        CN = fcnNvintercept(u0,ux1,uy1,uz1);% * cam2ned';
-        C2-CN
-    end
-
-    if i>1
-        %TRY POSE ESTIMATION
-        E = estimateEssentialMatrix(pm1(valid,:),p(valid,:),cam.params);
-        F = estimateFundamentalMatrix(pm1(valid,:),p(valid,:));
-        [~, that] = relativeCameraPose(E,cam.params,pm1(valid,:),p(valid,:))
-        [~, that] = relativeCameraPose(F,cam.params,pm1(valid,:),p(valid,:))
-        %[Rhat, that] = extrinsics(p(valid,:), worldPoints(valid,:), cam.params)
-        %[~, that] = estimateWorldCameraPose(p(valid,:), worldPoints(valid,:), cam.params)
-        fcnvec2uvec(B(i,1:3) - B(i-1,1:3))
-    end
+%     %N Vector Intercept
+%     if i==4
+%         ux1 = zeros(i,sum(valid)); uy1=ux1; uz1=ux1;
+%         for j=1:i
+%             [~, u] = pixel2angle(cam.params.IntrinsicMatrix, Pa{j}(valid,:));
+%             ux1(j,:)=u(:,1);  uy1(j,:)=u(:,2);  uz1(j,:)=u(:,3); 
+%         end
+%         u0 = -(B(1:i,1:3) - B(1,1:3));
+%         C2 = fcn2vintercept(u0,ux1,uy1,uz1);% * cam2ned';
+%         CN = fcnNvintercept(u0,ux1,uy1,uz1);% * cam2ned';
+%         C2-CN
+%     end
+% 
+%     if i>1
+%         %TRY POSE ESTIMATION
+%         E = estimateEssentialMatrix(pm1(valid,:),p(valid,:),cam.params);
+%         F = estimateFundamentalMatrix(pm1(valid,:),p(valid,:));
+%         [~, that] = relativeCameraPose(E,cam.params,pm1(valid,:),p(valid,:));
+%         [~, that] = relativeCameraPose(F,cam.params,pm1(valid,:),p(valid,:));
+%         %[Rhat, that] = extrinsics(p(valid,:), worldPoints(valid,:), cam.params)
+%         %[~, that] = estimateWorldCameraPose(p(valid,:), worldPoints(valid,:), cam.params)
+%         fcnvec2uvec(B(i,1:3) - B(i-1,1:3))
+%     end
 
     dx(i) = 0; if i>1; dx(i)=fcnrange(B(i,1:3),B(i-1,1:3)); end
     range = range+dx(i);
