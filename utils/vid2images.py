@@ -1,9 +1,9 @@
-import cv2  # pip install opencv-python, pip install opencv-contrib-python
-from fcns import common
+import cv2
 import os
+import utils.common
 
 PATH = '/Users/glennjocher/Downloads/DATA/VSM/chessboard/IMG_4414.MOV'
-path, file, _, _ = common.filenamesplit(PATH)
+path, file, _, _ = utils.common.filenamesplit(PATH)
 newdir = path + file + '/'
 
 if not os.path.exists(newdir):

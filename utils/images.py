@@ -1,5 +1,5 @@
-from functions.common import *
-from functions.strings import *
+from utils.common import *
+from utils.strings import *
 
 
 def boundingRect(x, imshape, border=(0, 0)):

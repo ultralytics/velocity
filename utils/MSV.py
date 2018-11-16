@@ -1,5 +1,5 @@
-from functions.common import *
-from functions.NLS import fzK
+from utils.common import *
+from utils.NLS import fzK
 
 
 # @profile

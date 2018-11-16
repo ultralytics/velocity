@@ -1,5 +1,5 @@
-from functions.common import *
-from functions.images import boundingRect
+from utils.common import *
+from utils.images import boundingRect
 
 
 # @profile
