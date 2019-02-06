@@ -2,14 +2,14 @@
 *.png
 *.tif
 *.heic
-*.JPG
+# *.JPG
 *.PNG
 *.TIF
 *.HEIC
 *.weights
 *.pt
 *.mat
-data/*
+# data/*
 
 output
 __pycache__

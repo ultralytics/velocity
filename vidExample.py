@@ -15,12 +15,12 @@ import plots
 def vidExamplefcn():
     n = 20  # number of frames to read
     isVideo = True
-    patha = '/Users/glennjocher/Downloads/DATA/VSM/'
+    patha = './data'
     pathb = '/Users/glennjocher/Google Drive/MATLAB/SPEEDTRAP/'
     if isVideo:
         # filename, startframe = patha + '2018.3.11/IMG_4119.MOV', 41  # 20km/h
         # filename, startframe = patha + '2018.3.11/IMG_4134.MOV', 19  # 40km/h
-        filename, startframe = patha + '2018.3.30/IMG_4238.m4v', 8  # 60km/h
+        filename, startframe = patha + '2018.3.30/IMG_4238.MOV', 8  # 60km/h
         readSpeed = 1  # read every # frames
         frames = np.arange(n) * readSpeed + startframe  # video frames to read
     else:
