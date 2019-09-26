@@ -1,6 +1,3 @@
-from plotly.offline import plot
-import plotly.graph_objs as go
-
 from utils.common import *
 from utils.strings import *
 from utils.transforms import *
@@ -13,23 +10,22 @@ import plots
 
 # @profile
 def vidExamplefcn():
-    n = 20  # number of frames to read
     isVideo = True
     patha = './data/'
     pathb = './matlab/'
     if isVideo:
-        # filename, startframe = patha + '2018.3.11/IMG_4119.MOV', 41  # 20km/h
-        # filename, startframe = patha + '2018.3.11/IMG_4134.MOV', 19  # 40km/h
-        filename, startframe = patha + '2018.3.30/IMG_4238.MOV', 8  # 60km/h
+        # filename, startframe = patha + 'IMG_4119.MOV', 41  # 20km/h 2018.3.11
+        filename, startframe = patha + 'IMG_4134.MOV', 19  # 40km/h 2018.3.11
+        # filename, startframe = patha + 'IMG_4238.MOV', 8  # 60km/h 2018.3.30
         readSpeed = 1  # read every # frames
+        n = 20  # number of frames to read
         frames = np.arange(n) * readSpeed + startframe  # video frames to read
     else:
-        # imagename = patha + '2018.3.11/IMG_4124.JPG'
-        # filename = patha + '2018.3.11/IMG_411%01d.JPG'
-        frames = np.array([4122, 4123, 4124, 4125, 4126, 4127, 4128, 4129, 4130, 4131, 4132, 4133])
+        frames = np.arange(4122, 4134)
+        n = len(frames)
         imagename = []
         for i in frames:
-            imagename.append(patha + '2018.3.11/IMG_' + str(i) + '.JPG')
+            imagename.append(patha + 'IMG_' + str(i) + '.JPG')
         filename = imagename[0]
 
     cam, cap = getCameraParams(filename, platform='iPhone 6s')
@@ -72,6 +68,7 @@ def vidExamplefcn():
         if not success:
             break
 
+
         # Scaling and histogram equalization
         scale = 1
         if scale != 1:
@@ -81,10 +78,10 @@ def vidExamplefcn():
         if i == 0:
             q *= scale
             boxa = boundingRect(q, im.shape, border=(0, 0))
-            boxb = boundingRect(q, im.shape, border=(1200, 800))
+            boxb = boundingRect(q, im.shape, border=(600, 400))
             roi = im[boxb[2]:boxb[3], boxb[0]:boxb[1]]
-            p = cv2.goodFeaturesToTrack(roi, 1000, 0.01, 0, blockSize=5, useHarrisDetector=True).squeeze() + np.float32(
-                [boxb[0], boxb[2]])
+            p = cv2.goodFeaturesToTrack(roi, 1000, 0.01, 0, blockSize=5, useHarrisDetector=True).squeeze() + \
+                np.float32([boxb[0], boxb[2]])
             p = cv2.cornerSubPix(im, p, (5, 5), (-1, -1),
                                  (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.001))
             p = np.concatenate((q, p))

@@ -71,7 +71,7 @@ def dms2degrees(dms):  # maps GPS [degrees minutes seconds] to decimal degrees
 
 
 def hemisphere2sign(x):  # converts hemisphere strings 'N', 'S', 'E', 'W' to signs 1, -1, 1, -1
-    sign = np.zeros(x.shape)
+    sign = np.zeros(len(x))
     sign[(x == 'N') | (x == 'E')] = 1
     sign[(x == 'S') | (x == 'W')] = -1
     return sign

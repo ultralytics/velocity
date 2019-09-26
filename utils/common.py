@@ -17,30 +17,20 @@ np.set_printoptions(linewidth=320, formatter={'float_kind': '{:11.5g}'.format}) 
 # from autograd import jacobian
 
 
-def mean(x, axis=None):
-    if axis is None:
-        return x.sum() / x.size
-    else:
-        return x.sum(axis) / x.shape[axis]
-
-
 def norm(x, axis=None):
-    if axis is None:
-        return math.sqrt((x * x).sum())
-    else:
-        return (x * x).sum(axis) ** 0.5
+    return (x * x).sum(axis) ** 0.5
 
 
 def rms(x, axis=None):
     if axis is None:
-        return math.sqrt((x * x).sum() / x.size)
+        return ((x * x).sum() / x.size) ** 0.5
     else:
         return ((x * x).sum(axis) / x.shape[axis]) ** 0.5
 
 
 def uvec(x, axis=1):  # turns each row or col into a unit vector
     if axis is None:
-        return x / math.sqrt((x * x).sum())
+        return x / (x * x).sum() ** 0.5
     else:
         return x / (x * x).sum(axis, keepdims=True) ** 0.5
 
@@ -135,7 +125,7 @@ def fcnsigmarejection(x, srl=3.0, ni=3):
     x = x.ravel()
     for m in range(ni):
         s = x.std() * srl
-        mu = mean(x)
+        mu = x.mean()
         vi = (x < mu + s) & (x > mu - s)
         x = x[vi]
         v[v] = vi

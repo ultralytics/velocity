@@ -16,7 +16,6 @@ Python 3.7 or later with the following `pip3 install -U -r requirements.txt` pac
 - `opencv-python`
 - `exifread`
 - `bokeh` (optional)
-- `plotly` (optional)
 
 [MATLAB](https://www.mathworks.com/products/matlab.html) >= 2018a with a common functions repo `$ git clone https://github.com/ultralytics/functions-matlab` added to the MATLAB path `>> addpath(genpath('/functions-matlab'))` and the following toolboxes:
 
