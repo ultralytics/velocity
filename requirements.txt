@@ -4,7 +4,6 @@ scipy
 torch
 opencv-python
 exifread
-plotly
 bokeh
 
 
