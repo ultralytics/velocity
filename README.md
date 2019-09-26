@@ -12,9 +12,7 @@ Python 3.7 or later with the following `pip3 install -U -r requirements.txt` pac
 
 - `numpy`
 - `scipy`
-- `torch` >= 0.4.0
-- `torchvision`
-- `tensorflow` >= 1.8.0
+- `torch`
 - `opencv-python`
 - `exifread`
 - `bokeh` (optional)
