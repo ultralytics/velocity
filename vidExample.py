@@ -1,3 +1,6 @@
+import scipy
+from scipy import io
+
 import plots
 from utils.KLT import *
 from utils.MSV import *
