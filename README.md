@@ -30,5 +30,10 @@ Various methods. Please contact for further information.
 
 <img src="https://github.com/ultralytics/velocity/blob/master/results.jpg"> 
 
+# Citation
+
+[![DOI](https://zenodo.org/badge/146165888.svg)](https://zenodo.org/badge/latestdoi/146165888)
+
 # Contact
-For questions or comments please contact Glenn Jocher at glenn.jocher@ultralytics.com or visit us at http://www.ultralytics.com/contact
+
+Issues should be raised directly in the repository. For additional questions or comments please email Glenn Jocher at glenn.jocher@ultralytics.com or visit us at https://contact.ultralytics.com.
