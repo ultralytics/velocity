@@ -2,9 +2,14 @@
 numpy
 scipy
 torch
-torchvision
-tensorflow
 opencv-python
 exifread
 plotly
 bokeh
+
+
+# Equivalent conda commands ----------------------------------------------------
+# conda update -n base -c defaults conda
+# conda install -yc anaconda numpy opencv matplotlib tqdm pillow plotly
+# conda install -yc pytorch pytorch torchvision
+# conda install -yc bokeh bokeh
