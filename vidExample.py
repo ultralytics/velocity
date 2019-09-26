@@ -1,27 +1,24 @@
-from utils.common import *
-from utils.strings import *
-from utils.transforms import *
-from utils.images import *
+import plots
 from utils.KLT import *
 from utils.MSV import *
 from utils.NLS import *
-import plots
+from utils.images import *
 
 
 # @profile
 def vidExamplefcn():
-    isVideo = False
+    isVideo = True
     patha = './data/'
     pathb = './matlab/'
     if isVideo:
         # filename, startframe = patha + 'IMG_4119.MOV', 41  # 20km/h 2018.3.11
         filename, startframe = patha + 'IMG_4134.MOV', 19  # 40km/h 2018.3.11
-        # filename, startframe = patha + 'IMG_4238.MOV', 8  # 60km/h 2018.3.30
+        # filename, startframe = patha + 'IMG_4238.MOV', 8  # 60km/h 2018.3.30 missing *.mat file
         readSpeed = 1  # read every # frames
         n = 20  # number of frames to read
         frames = np.arange(n) * readSpeed + startframe  # video frames to read
     else:
-        frames = np.arange(4122, 4134)
+        frames = np.arange(4122, 4134)  # 40km/h
         n = len(frames)
         imagename = []
         for i in frames:
@@ -31,6 +28,12 @@ def vidExamplefcn():
     cam, cap = getCameraParams(filename, platform='iPhone 6s')
     mat = scipy.io.loadmat(pathb + cam['filename'] + '.mat')
     q = mat['q'].astype(np.float32)
+
+    video_4k_to_2k = True
+    if isVideo and video_4k_to_2k:  # scale from native 4k to 2k video
+        q /= 2
+        cam['focalLength_pix'] /= 2
+        cam['IntrinsicMatrix'][:2, :2] /= 2
 
     # Define camera and car information matrices
     cput0 = time.time()
@@ -67,7 +70,6 @@ def vidExamplefcn():
             B[i, 9:13] = fcnEXIF2LLAT(exif)
         if not success:
             break
-
 
         # Scaling and histogram equalization
         scale = 1
