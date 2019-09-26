@@ -1,20 +1,13 @@
 import math
-import cv2  # pip install opencv-python opencv-contrib-python
+import cv2
 import numpy as np
 import scipy.io
-# import tensorflow as tf
 import torch
 import time
 
 # Set printoptions
-torch.set_printoptions(linewidth=1320, precision=5, profile='long')
+torch.set_printoptions(linewidth=320, precision=5, profile='long')
 np.set_printoptions(linewidth=320, formatter={'float_kind': '{:11.5g}'.format})  # format short g, %precision=5
-
-
-# np.set_string_function(lambda a: str(a.shape), repr=False)
-
-# import autograd.numpy as np  # pip install autograd
-# from autograd import jacobian
 
 
 def norm(x, axis=None):
@@ -22,17 +15,11 @@ def norm(x, axis=None):
 
 
 def rms(x, axis=None):
-    if axis is None:
-        return ((x * x).sum() / x.size) ** 0.5
-    else:
-        return ((x * x).sum(axis) / x.shape[axis]) ** 0.5
+    return (x * x).mean(axis) ** 0.5
 
 
 def uvec(x, axis=1):  # turns each row or col into a unit vector
-    if axis is None:
-        return x / (x * x).sum() ** 0.5
-    else:
-        return x / (x * x).sum(axis, keepdims=True) ** 0.5
+    return x / (x * x).sum(axis, keepdims=True) ** 0.5
 
 
 def addcol0(x):  # append a zero column to right side
@@ -76,7 +63,7 @@ def elaz(x):  # cartesian coordinate to spherical el and az angles
 
 
 def cc2sc(x):
-    s = np.zeros(x.shape)
+    s = np.zeros_like(x)
     if x.shape[0] == 3:  # by columns
         r = norm(x, axis=0)
         s[0] = r
@@ -91,7 +78,7 @@ def cc2sc(x):
 
 
 def sc2cc(s):  # spherical to cartesian [range, el, az] to [x, y z]
-    x = np.zeros(s.shape)
+    x = np.zeros_like(s)
     if s.shape[0] == 3:  # by columns
         r = s[0]
         a = r * np.cos(s[1])
