@@ -10,7 +10,7 @@ import plots
 
 # @profile
 def vidExamplefcn():
-    isVideo = True
+    isVideo = False
     patha = './data/'
     pathb = './matlab/'
     if isVideo:
@@ -78,7 +78,7 @@ def vidExamplefcn():
         if i == 0:
             q *= scale
             boxa = boundingRect(q, im.shape, border=(0, 0))
-            boxb = boundingRect(q, im.shape, border=(600, 400))
+            boxb = boundingRect(q, im.shape, border=(700, 500))
             roi = im[boxb[2]:boxb[3], boxb[0]:boxb[1]]
             p = cv2.goodFeaturesToTrack(roi, 1000, 0.01, 0, blockSize=5, useHarrisDetector=True).squeeze() + \
                 np.float32([boxb[0], boxb[2]])

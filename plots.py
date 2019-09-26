@@ -27,7 +27,6 @@ def plotresults(cam, im, P, S, B, bbox):
                         tools='box_zoom,pan,save,reset,wheel_zoom',
                         active_scroll='wheel_zoom', active_inspect=None)
     a.add_tools(hoverImage)
-    a.legend.click_policy = 'hide'
     a.image(image=[np.flip(im, 0)], x=0, y=h, dw=w, dh=h, palette=palettes.Greys256)
     a.quad(top=[h], bottom=[0], left=[0], right=[w], alpha=0)  # clear rectange hack for tooltip image x,y
 
