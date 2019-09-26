@@ -9,6 +9,7 @@
 *.weights
 *.pt
 *.mat
+*.html
 # data/*
 
 output
