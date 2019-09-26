@@ -85,6 +85,7 @@ def vidExamplefcn():
             p = cv2.cornerSubPix(im, p, (5, 5), (-1, -1),
                                  (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.001))
             p = np.concatenate((q, p))
+
             t, R, residuals, _ = estimateWorldCameraPose(K, q, worldPointsLicensePlate(), findR=True)
             p3 = addcol0(image2world(K, R, t, p).astype(float)) @ R + t
             R = np.eye(3)
