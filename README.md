@@ -29,7 +29,7 @@ Various methods. Please contact for further information.
 
 # Citation
 
-[![DOI](https://zenodo.org/badge/146165888.svg)](https://zenodo.org/badge/latestdoi/146165888)
+[![DOI](https://zenodo.org/badge/126519968.svg)](https://zenodo.org/badge/latestdoi/126519968)
 
 # Contact
 
