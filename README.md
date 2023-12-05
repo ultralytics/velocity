@@ -9,6 +9,7 @@ Welcome to the [Ultralytics Velocity Estimation Project](https://github.com/ultr
 Before you start, make sure you meet the following requirements:
 
 ### Python Dependencies
+
 It's necessary to have Python 3.7 or later. Please install the following packages using pip:
 ```
 pip3 install -U -r requirements.txt
@@ -22,6 +23,7 @@ You should have the following Python packages installed:
 - `bokeh` - An optional dependency for interactive visualization.
 
 ### MATLAB Setup
+
 A MATLAB installation (version 2018a or newer) is required with the following configurations:
 1. Clone the common functions repository:
 ```
@@ -37,7 +39,7 @@ Please ensure you have these MATLAB toolboxes installed:
 
 # 🏃‍♂️ How to Run
 
-The repository offers various methods for velocity estimation. For detailed instructions and further information, feel free to 📨 [contact us](mailto:support@ultralytics.com).
+The repository offers various methods for velocity estimation. For detailed instructions and further information, feel free to 📨 [contact us](https://ultralytics.com/contact).
 
 <img src="https://github.com/ultralytics/velocity/blob/master/results.jpg" alt="Velocity Estimation Results"> 
 
