@@ -47,7 +47,7 @@ Ultralytics offers two licensing options to accommodate diverse use cases:
 
 # Contact
 
-For Ultralytics bug reports and feature requests please visit [GitHub Issues](https://github.com/ultralytics/flickr_scraper/issues), and join our [Discord](https://ultralytics.com/discord) community for questions and discussions!
+For Ultralytics bug reports and feature requests please visit [GitHub Issues](https://github.com/ultralytics/velocity/issues), and join our [Discord](https://ultralytics.com/discord) community for questions and discussions!
 
 <br>
 <div align="center">
