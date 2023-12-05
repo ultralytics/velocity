@@ -75,7 +75,6 @@ For bug reports, feature requests, and contributions, head to [GitHub Issues](ht
 
 <br>
 <div align="center">
-  <!-- Social media and community links -->
   <a href="https://github.com/ultralytics"><img src="https://github.com/ultralytics/assets/raw/main/social/logo-social-github.png" width="3%" alt="Ultralytics GitHub"></a>
   <img src="https://github.com/ultralytics/assets/raw/main/social/logo-transparent.png" width="3%" alt="space">
   <a href="https://www.linkedin.com/company/ultralytics/"><img src="https://github.com/ultralytics/assets/raw/main/social/logo-social-linkedin.png" width="3%" alt="Ultralytics LinkedIn"></a>
@@ -90,6 +89,3 @@ For bug reports, feature requests, and contributions, head to [GitHub Issues](ht
   <img src="https://github.com/ultralytics/assets/raw/main/social/logo-transparent.png" width="3%" alt="space">
   <a href="https://ultralytics.com/discord"><img src="https://github.com/ultralytics/assets/raw/main/social/logo-social-discord.png" width="3%" alt="Ultralytics Discord"></a>
 </div>
-```
-
-This updated README reflects a friendly and professional tone, provides a thorough yet concise introduction to the project, and clarifies the requirements and licensing details. Emojis are sparingly used for better engagement, and additional context is given where necessary. The document is structured to be accessible to both technical and non-technical audiences.
