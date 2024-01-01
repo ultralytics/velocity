@@ -88,24 +88,24 @@ def fcnNLS_t(K, p, pw, x):
     # p = nx2 image points
     # pw = nx3 world points = pc @ cam2ned().T
 
-    dx = 1E-6  # for numerical derivatives
+    dx = 1e-6  # for numerical derivatives
     dx1, dx2, dx3 = [dx, 0, 0], [0, dx, 0], [0, 0, dx]
     n = pw.shape[0]
     z = p.ravel()
     max_iter = 30
-    mdm = np.eye(3) * 1  # marquardt damping matrix (eye times damping coeficient)
+    mdm = np.eye(3) * 1  # marquardt damping matrix (eye times damping coefficient)
     for i in range(max_iter):
         b0 = pw + x[0:4]
         zhat = fzK(b0, K).ravel()
         JT = fzK(np.concatenate((b0 + dx1, b0 + dx2, b0 + dx3), 0), K).reshape(3, n * 2)
         JT = (JT - zhat) / dx  # J Transpose
         JTJ = JT @ JT.T  # J.T @ J
-        delta = np.linalg.inv(JTJ + mdm) @ JT @ (z - zhat) * min(((i + 1) * .2) ** 2, 1)
+        delta = np.linalg.inv(JTJ + mdm) @ JT @ (z - zhat) * min(((i + 1) * 0.2) ** 2, 1)
         x = x + delta
-        if rms(delta) < 1E-8:
+        if rms(delta) < 1e-8:
             break
     else:
-        print('WARNING: fcnNLS_t() reaching max iterations!')
+        print("WARNING: fcnNLS_t() reaching max iterations!")
     # print('%i steps, residual rms = %.5f' % (i,rms(z-zhat)))
     return x.astype(np.float32)
 
@@ -126,12 +126,12 @@ def fcnNLS_Rt(K, p, pw, x):
     # J = n x 6
     # z = n x 1 for n measurements
 
-    dx = 1E-6  # for numerical derivatives
+    dx = 1e-6  # for numerical derivatives
     dx1, dx2, dx3 = [dx, 0, 0], [0, dx, 0], [0, 0, dx]
     n = pw.shape[0]
     z = p.ravel()
     max_iter = 30
-    mdm = np.eye(6) * 1  # marquardt damping matrix (eye times damping coeficient)
+    mdm = np.eye(6) * 1  # marquardt damping matrix (eye times damping coefficient)
     # jfunc = jacobian(fzKautograd_Rt)
     for i in range(max_iter):
         x03 = x[0:3]
@@ -151,12 +151,12 @@ def fcnNLS_Rt(K, p, pw, x):
         JT = (JT - zhat) / dx  # J Transpose
 
         JTJ = JT @ JT.T  # J.T @ J
-        delta = np.linalg.inv(JTJ + mdm) @ JT @ (z - zhat) * min(((i + 1) * .2) ** 2, 1)
+        delta = np.linalg.inv(JTJ + mdm) @ JT @ (z - zhat) * min(((i + 1) * 0.2) ** 2, 1)
         x = x + delta
-        if rms(delta) < 1E-8:
+        if rms(delta) < 1e-8:
             break
     else:
-        print('WARNING: fcnNLS_Rt() reaching max iterations!')
+        print("WARNING: fcnNLS_Rt() reaching max iterations!")
     R = rpy2dcm(x[0:3]).astype(np.float32)
     t = x[3:6].astype(np.float32)
     # print('%i steps, residual rms = %.5f' % (i, rms(z-zhat)))
@@ -172,7 +172,7 @@ def fcnNLS_batch(K, P, pw, cw):  # solves for pxyz, cxyz[1:], crpy[1:]
     nz = nt * (nc + 1) * 2  # number of measurements
     K = K.astype(float)
 
-    z = P[0:2].ravel('F')
+    z = P[0:2].ravel("F")
     z = np.concatenate((z[0::2], z[1::2]))
     nanz = np.isnan(z)
     z[nanz] = 0
@@ -181,20 +181,20 @@ def fcnNLS_batch(K, P, pw, cw):  # solves for pxyz, cxyz[1:], crpy[1:]
     range_cal = norm(cw[1])
 
     def fzKautograd_batch(x, K, nc, nt):  # for autograd
-        pw = x[0:nt * 3].reshape(nt, 3)
+        pw = x[0 : nt * 3].reshape(nt, 3)
         alist = [pw]  # = pw @ np.eye(3) + np.zeros((1,3)), camera 1 fixed
         for i in range(nc):
             ia = nt * 3 + i * 3  # pos start
             ib = nc * 3 + ia  # rpy start
-            pos = x[ia:ia + 3]
-            rpy = x[ib:ib + 3]
+            pos = x[ia : ia + 3]
+            rpy = x[ib : ib + 3]
             alist.append(pw @ rpy2dcm(rpy) + pos)
         phat = np.asarray(alist).reshape(((nc + 1) * nt, 3))
-        return pscale(phat @ K).ravel('F')
+        return pscale(phat @ K).ravel("F")
 
-    jdx = 1E-6  # for numerical derivatives
+    jdx = 1e-6  # for numerical derivatives
     max_iter = 10
-    mdm = np.eye(nx) * 1  # marquardt damping matrix (eye times damping coeficient)
+    mdm = np.eye(nx) * 1  # marquardt damping matrix (eye times damping coefficient)
     # jfunc = jacobian(fzKautograd_batch)
     for i in range(max_iter):
         tic = time.time()
@@ -209,21 +209,21 @@ def fcnNLS_batch(K, P, pw, cw):  # solves for pxyz, cxyz[1:], crpy[1:]
             JT[j] = fzKautograd_batch(x1, K, nc, nt)
         JT = (JT - zhat) / jdx
 
-        delta = np.linalg.inv(JT @ JT.T + mdm) @ JT @ (z - zhat) * .9
+        delta = np.linalg.inv(JT @ JT.T + mdm) @ JT @ (z - zhat) * 0.9
         x = x + delta
         # x[nt * 3:nt * 3 + nc * 3] *= range_cal / norm(x[nt * 3:nt * 3 + 3])  # calibrate scale
-        print('%g: %.3fs, f=%g, x=%s' % (i, time.time() - tic, rms(z - zhat), rms(delta)))
-        if rms(delta) < 1E-7:
+        print("%g: %.3fs, f=%g, x=%s" % (i, time.time() - tic, rms(z - zhat), rms(delta)))
+        if rms(delta) < 1e-7:
             break
     else:
-        print('WARNING: fcnNLS_batch() reaching max iterations!')
-    print('fcnNLS_batch done in %g steps, %.3fs, f=%g' % (i, time.time() - tic, rms(z - zhat)))
+        print("WARNING: fcnNLS_batch() reaching max iterations!")
+    print("fcnNLS_batch done in %g steps, %.3fs, f=%g" % (i, time.time() - tic, rms(z - zhat)))
 
     j = nt * 3
     pw = x[0:j].reshape(nt, 3)  # tp pos
-    cw = x[j:j + nc * 3].reshape(nc, 3)  # cam pos
+    cw = x[j : j + nc * 3].reshape(nc, 3)  # cam pos
     cw = np.concatenate((np.zeros((1, 3)), cw), 0)
-    ca = x[j + nc * 3:j + nc * 3 * 2].reshape(nc, 3)  # cam rpy
+    ca = x[j + nc * 3 : j + nc * 3 * 2].reshape(nc, 3)  # cam rpy
     return cw, pw
 
 
@@ -237,7 +237,7 @@ def fcnNLS_batch2(K, P, pw, cw):  # solves for pxyz, [el, az, c_ranges[1:]]
     K = K.astype(float)
     C = cam2ned()
 
-    z = P[0:2].ravel('F')
+    z = P[0:2].ravel("F")
     z = np.concatenate((z[0::2], z[1::2]))
     nanz = np.isnan(z)
     z[nanz] = 0
@@ -249,10 +249,10 @@ def fcnNLS_batch2(K, P, pw, cw):  # solves for pxyz, [el, az, c_ranges[1:]]
 
     def fzKautograd_batch(x, K, nc, nt):  # for autograd
         j = nt * 3
-        R = rpy2dcm(x[j:j + 3])
+        R = rpy2dcm(x[j : j + 3])
         pc = x[0:j].reshape(nt, 3) @ R  # tiepoints in camera frame
         sc = np.zeros((nc, 3))
-        sc[:, 0] = x[j + 5:j + 5 + nc]  # ranges
+        sc[:, 0] = x[j + 5 : j + 5 + nc]  # ranges
         sc[:, 1] = x[j + 3]  # el
         sc[:, 2] = x[j + 4]  # az
         offset = sc2cc(sc) @ C  # ned to cam
@@ -260,11 +260,11 @@ def fcnNLS_batch2(K, P, pw, cw):  # solves for pxyz, [el, az, c_ranges[1:]]
         for i in range(nc):
             alist.append(pc + offset[i])
         phat = np.asarray(alist).reshape(((nc + 1) * nt, 3))
-        return pscale(phat @ K).ravel('F')
+        return pscale(phat @ K).ravel("F")
 
-    jdx = 1E-6  # for numerical derivatives
+    jdx = 1e-6  # for numerical derivatives
     max_iter = 20
-    mdm = np.eye(nx) * 1  # marquardt damping matrix (eye times damping coeficient)
+    mdm = np.eye(nx) * 1  # marquardt damping matrix (eye times damping coefficient)
     # jfunc = jacobian(fzKautograd_batch)
     for i in range(max_iter):
         tic = time.time()
@@ -279,24 +279,24 @@ def fcnNLS_batch2(K, P, pw, cw):  # solves for pxyz, [el, az, c_ranges[1:]]
             JT[j] = fzKautograd_batch(x1, K, nc, nt)
         JT = (JT - zhat) / jdx
 
-        delta = np.linalg.inv(JT @ JT.T + mdm) @ JT @ (z - zhat) * .9
+        delta = np.linalg.inv(JT @ JT.T + mdm) @ JT @ (z - zhat) * 0.9
         x = x + delta
         # calibrate ranges
         # x[nt * 3 + 5:nt * 3 + 5 + nc] = x[nt * 3 + 5:nt * 3 + 5 + nc] / x[nt * 3 + 5:nt * 3 + 6] * ranges[0]
         # print('%g: %.3fs, f=%g, x=%s' % (i, time.time() - tic, rms(z - zhat), rms(delta)))
-        if rms(delta) < 1E-7:
+        if rms(delta) < 1e-7:
             break
     else:
-        print('WARNING: fcnNLS_batch() reaching max iterations!')
-    print('fcnNLS_batch2 done in %g steps, %.3fs, f=%g' % (i, time.time() - tic, rms(z - zhat)))
+        print("WARNING: fcnNLS_batch() reaching max iterations!")
+    print("fcnNLS_batch2 done in %g steps, %.3fs, f=%g" % (i, time.time() - tic, rms(z - zhat)))
 
     j = nt * 3
     sc = np.zeros((nc, 3))
-    sc[:, 0] = x[j + 5:j + 5 + nc]  # ranges
+    sc[:, 0] = x[j + 5 : j + 5 + nc]  # ranges
     sc[:, 1] = x[j + 3]  # el
     sc[:, 2] = x[j + 4]  # az
     pw = x[0:j].reshape(nt, 3)  # tp pos
     cw = sc2cc(sc) @ C  # cam pos
     cw = np.concatenate((np.zeros((1, 3)), cw), 0)
-    ca = x[j:j + 3]  # cam rpy
+    ca = x[j : j + 3]  # cam rpy
     return cw, pw

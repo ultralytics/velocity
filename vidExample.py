@@ -11,11 +11,11 @@ from utils.images import *
 # @profile
 def vidExamplefcn():
     isVideo = True
-    patha = './data/'
-    pathb = './matlab/'
+    patha = "./data/"
+    pathb = "./matlab/"
     if isVideo:
         # filename, startframe = patha + 'IMG_4119.MOV', 41  # 20km/h 2018.3.11
-        filename, startframe = patha + 'IMG_4134.MOV', 19  # 40km/h 2018.3.11
+        filename, startframe = patha + "IMG_4134.MOV", 19  # 40km/h 2018.3.11
         # filename, startframe = patha + 'IMG_4238.MOV', 8  # 60km/h 2018.3.30 missing *.mat file
         readSpeed = 1  # read every # frames
         n = 20  # number of frames to read
@@ -25,31 +25,53 @@ def vidExamplefcn():
         n = len(frames)
         imagename = []
         for i in frames:
-            imagename.append(patha + 'IMG_' + str(i) + '.JPG')
+            imagename.append(patha + "IMG_" + str(i) + ".JPG")
         filename = imagename[0]
 
-    cam, cap = getCameraParams(filename, platform='iPhone 6s')
-    mat = scipy.io.loadmat(pathb + cam['filename'] + '.mat')
-    q = mat['q'].astype(np.float32)
+    cam, cap = getCameraParams(filename, platform="iPhone 6s")
+    mat = scipy.io.loadmat(pathb + cam["filename"] + ".mat")
+    q = mat["q"].astype(np.float32)
 
     video_4k_to_2k = True
     if isVideo and video_4k_to_2k:  # scale from native 4k to 2k video
         q /= 2
-        cam['focalLength_pix'] /= 2
-        cam['IntrinsicMatrix'][:2, :2] /= 2
+        cam["focalLength_pix"] /= 2
+        cam["IntrinsicMatrix"][:2, :2] /= 2
 
     # Define camera and car information matrices
     cput0 = time.time()
-    K = cam['IntrinsicMatrix']
+    K = cam["IntrinsicMatrix"]
     B = np.zeros([n, 14], dtype=np.float32)  # [xyz, rpy, xyz_ecef, lla, t, number](nx14) car information
     S = np.zeros([n, 9], dtype=np.float32)  # stats
     _ = np.linalg.inv(np.random.rand(3, 3) @ np.random.rand(3, 3))  # for profiling purposes
 
     # Iterate over images
     proc_dt = np.zeros([n, 1])
-    print('Starting image processing on %s ...' % filename)
-    print(('\n' + '%13s' * 9) * 2 % ('image', 'procTime', 'pointTracks', 'metric', 'dt', 'time', 'dx', 'distance',
-                                     'speed', '#', '(s)', '#', '(pixels)', '(s)', '(s)', '(m)', '(m)', '(km/h)'))
+    print("Starting image processing on %s ..." % filename)
+    print(
+        ("\n" + "%13s" * 9)
+        * 2
+        % (
+            "image",
+            "procTime",
+            "pointTracks",
+            "metric",
+            "dt",
+            "time",
+            "dx",
+            "distance",
+            "speed",
+            "#",
+            "(s)",
+            "#",
+            "(pixels)",
+            "(s)",
+            "(s)",
+            "(m)",
+            "(m)",
+            "(km/h)",
+        )
+    )
     for i in range(n):
         tic = time.time()
         # read image
@@ -84,14 +106,16 @@ def vidExamplefcn():
             q *= scale
             boxa = boundingRect(q, im.shape, border=(0, 0))
             boxb = boundingRect(q, im.shape, border=(700, 500))
-            roi = im[boxb[2]:boxb[3], boxb[0]:boxb[1]]
-            p = cv2.goodFeaturesToTrack(roi, 1000, 0.01, 0, blockSize=5, useHarrisDetector=True).squeeze() + \
-                np.float32([boxb[0], boxb[2]])
-            p = cv2.cornerSubPix(im, p, (5, 5), (-1, -1),
-                                 (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.001))
+            roi = im[boxb[2] : boxb[3], boxb[0] : boxb[1]]
+            p = cv2.goodFeaturesToTrack(roi, 1000, 0.01, 0, blockSize=5, useHarrisDetector=True).squeeze() + np.float32(
+                [boxb[0], boxb[2]]
+            )
+            p = cv2.cornerSubPix(
+                im, p, (5, 5), (-1, -1), (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.001)
+            )
             p = np.concatenate((q, p))
 
-            t, R, residuals, _ = estimateWorldCameraPose(K, q, worldPointsLicensePlate('Chile'), findR=True)
+            t, R, residuals, _ = estimateWorldCameraPose(K, q, worldPointsLicensePlate("Chile"), findR=True)
             p3 = addcol0(image2world(K, R, t, p).astype(float)) @ R + t
             R = np.eye(3)
             B[0, 0:3] = t
@@ -139,7 +163,7 @@ def vidExamplefcn():
         # Print image[i] results
         proc_dt[i] = time.time() - tic
         S[i, :] = (i, proc_dt[i], vg.sum(), residuals, dt, B[i, 12] - t0, dr, r, dr / dt * 3.6)
-        print('%13g%13.3f%13g%13.3f%13.3f%13.3f%13.2f%13.2f%13.1f' % tuple(S[i, :]))
+        print("%13g%13.3f%13g%13.3f%13.3f%13.3f%13.2f%13.2f%13.1f" % tuple(S[i, :]))
 
         # imrgb = cv2.cvtColor(imbgr,cv2.COLOR_BGR2RGB)
         # plots.imshow(cv2.cvtColor(imrgb,cv2.COLOR_BGR2HSV_FULL)[:,:,0])
@@ -151,8 +175,8 @@ def vidExamplefcn():
         cap.release()  # Release the video capture object
 
     dta = time.time() - cput0
-    print('\nSpeed = %.2f +/- %.2f km/h\nRes = %.3f pixels' % (S[1:, 8].mean(), S[1:, 8].std(), S[1:, 3].mean()))
-    print('Processed %g images: %s in %.2fs (%.2ffps)\n' % (n, frames[:], dta, n / dta))
+    print("\nSpeed = %.2f +/- %.2f km/h\nRes = %.3f pixels" % (S[1:, 8].mean(), S[1:, 8].std(), S[1:, 3].mean()))
+    print("Processed %g images: %s in %.2fs (%.2ffps)\n" % (n, frames[:], dta, n / dta))
 
     # Post-track process
     if False:
@@ -175,9 +199,9 @@ def vidExamplefcn():
             P[2:4, vg, i] = p_.T  # xy_proj
             P[4, vg, i] = i
             S[i, :] = (i, proc_dt[i], vg.sum(), residuals, dt, B[i, 12] - t0, dr, r, dr / dt * 3.6)
-            print('%13g%13.3f%13g%13.3f%13.3f%13.3f%13.2f%13.2f%13.1f' % tuple(S[i, :]))
-        print('\nSpeed = %.2f +/- %.2f km/h\nRes = %.3f pixels' % (S[1:, 8].mean(), S[1:, 8].std(), S[1:, 3].mean()))
-        print('Processed %g images: %s in %.2fs (%.2ffps)\n' % (n, frames[:], dta, n / dta))
+            print("%13g%13.3f%13g%13.3f%13.3f%13.3f%13.2f%13.2f%13.1f" % tuple(S[i, :]))
+        print("\nSpeed = %.2f +/- %.2f km/h\nRes = %.3f pixels" % (S[1:, 8].mean(), S[1:, 8].std(), S[1:, 3].mean()))
+        print("Processed %g images: %s in %.2fs (%.2ffps)\n" % (n, frames[:], dta, n / dta))
 
     # Batch NLS
     # Batch2 may work better with tripod, currently camera is tilting a little
@@ -187,13 +211,14 @@ def vidExamplefcn():
         S[:, 7] = np.cumsum(S[:, 6])
         S[1:, 8] = S[1:, 6] / S[1:, 4] * 3.6
         for i in range(0, n):
-            print('%13g%13.3f%13g%13.3f%13.3f%13.3f%13.2f%13.2f%13.1f' % tuple(S[i, :]))
-        print('\nSpeed = %.2f +/- %.2f km/h\nResiduals = %.3f pixels' % (
-            S[1:, 8].mean(), S[1:, 8].std(), S[1:, 3].mean()))
-        print('Processed %g images: %s in %.2fs (%.2ffps)\n' % (n, frames[:], dta, n / dta))
+            print("%13g%13.3f%13g%13.3f%13.3f%13.3f%13.2f%13.2f%13.1f" % tuple(S[i, :]))
+        print(
+            "\nSpeed = %.2f +/- %.2f km/h\nResiduals = %.3f pixels" % (S[1:, 8].mean(), S[1:, 8].std(), S[1:, 3].mean())
+        )
+        print("Processed %g images: %s in %.2fs (%.2ffps)\n" % (n, frames[:], dta, n / dta))
 
     plots.plotresults(cam, im // 2 + imfirst // 2, P, S, B, bbox=boxb)  # // is integer division
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     vidExamplefcn()
