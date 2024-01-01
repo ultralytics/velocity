@@ -61,7 +61,7 @@ def KLTregional(im0, im, p0, T, lk_param, fbt=1.0, translateFlag=False):
     if translateFlag:
         dx = T[2, 0].__int__()
         dy = T[2, 1].__int__()
-        im_warped_0 = im[y0 + dy:y1 + dy, x0 + dx:x1 + dx]
+        im_warped_0 = im[y0 + dy : y1 + dy, x0 + dx : x1 + dx]
     else:
         x, y = np.meshgrid(np.arange(x0, x1, dtype=np.float32), np.arange(y0, y1, dtype=np.float32), copy=False)
         x__ = x * T[0, 0] + y * T[1, 0] + T[2, 0]
@@ -119,7 +119,7 @@ def KLTmain(im, im0, im0_small, p0):
     if v.sum() > 10:  # good fit
         T23, inliers = cv2.estimateAffine2D(p0[v], p[v], method=cv2.RANSAC)  # 2x3, better results
     else:
-        print('KLT coarse-affine failure, running SURF matches full scale.')
+        print("KLT coarse-affine failure, running SURF matches full scale.")
         T23, inliers = estimateAffine2D_SURF(im0, im, p0, scale=1)
 
     # 3. Fine tracking on affine-transformed regions
