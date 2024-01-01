@@ -18,10 +18,13 @@ Currently, we do not provide a public dataset alongside this repository; the met
 To run the code in this repository, you will need the following:
 
 - **Python 3.7+**: Install Python and use pip to set up the necessary libraries:
+
   ```
   pip3 install -U -r requirements.txt
   ```
+
   The `requirements.txt` file includes key Python packages such as:
+
   - `numpy`
   - `scipy`
   - `torch` (PyTorch)
@@ -30,14 +33,19 @@ To run the code in this repository, you will need the following:
   - `bokeh` (optional, for visualization)
 
 - **MATLAB 2018a or newer**: Besides Python, some scripts require MATLAB. Clone the common functions repository and add it to your MATLAB path with the following commands:
+
   ```
   git clone https://github.com/ultralytics/functions-matlab
   ```
+
   Then in MATLAB:
+
   ```
   >> addpath(genpath('/functions-matlab'))
   ```
+
   Ensure you have the following MATLAB toolboxes installed:
+
   - `Statistics and Machine Learning Toolbox`
   - `Signal Processing Toolbox`
 
@@ -46,6 +54,7 @@ To run the code in this repository, you will need the following:
 The repository contains various methods for vehicle speed estimation. If you're interested in leveraging these techniques or require more information on running the code, please feel free to reach out.
 
 <!-- Sample results image -->
+
 <img src="https://github.com/ultralytics/velocity/blob/master/results.jpg"> 
 
 # 📚 Citation
@@ -59,6 +68,7 @@ If our work assists you in your research or project, please consider citing it u
 We welcome contributions from the community! Whether you're fixing bugs, adding new features, or improving documentation, your input is invaluable. Take a look at our [Contributing Guide](https://docs.ultralytics.com/help/contributing) to get started. Also, we'd love to hear about your experience with Ultralytics products. Please consider filling out our [Survey](https://ultralytics.com/survey?utm_source=github&utm_medium=social&utm_campaign=Survey). A huge 🙏 and thank you to all of our contributors!
 
 <!-- Ultralytics contributors -->
+
 <a href="https://github.com/ultralytics/yolov5/graphs/contributors">
 <img width="100%" src="https://github.com/ultralytics/assets/raw/main/im/image-contributors.png" alt="Ultralytics open-source contributors"></a>
 
