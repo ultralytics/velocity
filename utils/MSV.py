@@ -13,11 +13,11 @@ def fcnMSV1_t(K, P, B, vg, ii):  # solves for 1 camera translation
     u0 = B[0, 0:3] - B[:nf, 0:3]
     x = np.array([0, 0, 1]) - u0[nf - 2]
 
-    dx = 1E-6  # for numerical derivatives
+    dx = 1e-6  # for numerical derivatives
     dx1, dx2, dx3 = [dx, 0, 0], [0, dx, 0], [0, 0, dx]
-    z = P[0:2, vg, ii].ravel('F')
+    z = P[0:2, vg, ii].ravel("F")
     max_iter = 1000
-    mdm = np.eye(3) * 1  # marquardt damping matrix (eye times damping coeficient)
+    mdm = np.eye(3) * 1  # marquardt damping matrix (eye times damping coefficient)
     xi = np.zeros((max_iter, 3))
     res = np.zeros((max_iter, 1))
     for i in range(max_iter):
@@ -33,10 +33,10 @@ def fcnMSV1_t(K, P, B, vg, ii):  # solves for 1 camera translation
         # print('%g: f=%g, x=%s' % (i, rms(z - zhat), rms(delta)))
         x = x + delta
         xi[i] = x
-        if rms(delta) < 1E-8:
+        if rms(delta) < 1e-8:
             break
     if i == (max_iter - 1):
-        print('WARNING: fcnMSV1_t() reaching max iterations!')
+        print("WARNING: fcnMSV1_t() reaching max iterations!")
     # print('%i steps, residual rms = %.5f' % (i,rms(z-zhat)))
     # py.plot([go.Scatter(x=xi[:i, 0], y=xi[:i, 2], mode='markers',
     #                    marker=dict(
@@ -56,11 +56,11 @@ def fcnMSV2_t(K, P, B, vg, i):  # solves for 1 camera translation
     # x = -np.array([u0[nf - 2], u0[nf - 2] - [0, 0, 1]]).ravel()
     x = -u0[1:].ravel()
 
-    dx = 1E-6  # for numerical derivatives
+    dx = 1e-6  # for numerical derivatives
     dx1, dx2, dx3 = [dx, 0, 0], [0, dx, 0], [0, 0, dx]
-    z = P[0:2, vg, i - 1:i + 1].ravel('F')
+    z = P[0:2, vg, i - 1 : i + 1].ravel("F")
     max_iter = 300
-    mdm = np.eye(6) * 1  # marquardt damping matrix (eye times damping coeficient)
+    mdm = np.eye(6) * 1  # marquardt damping matrix (eye times damping coefficient)
     for i in range(max_iter):
         a = fcnNvintercept(np.vstack((u0[:-2], -x.reshape((2, 3)))), U)
         a1 = a + x[0:3]
@@ -77,13 +77,13 @@ def fcnMSV2_t(K, P, B, vg, i):  # solves for 1 camera translation
 
         JT = (JT - zhat) / dx
         JTJ = JT @ JT.T  # J.T @ J
-        delta = np.linalg.inv(JTJ + mdm) @ JT @ residual * min(((i + 1) * .01) ** 2, 1)
-        print('%g: f=%g, x=%s' % (i, rms(z - zhat), rms(delta)))
+        delta = np.linalg.inv(JTJ + mdm) @ JT @ residual * min(((i + 1) * 0.01) ** 2, 1)
+        print("%g: f=%g, x=%s" % (i, rms(z - zhat), rms(delta)))
         x = x + delta
-        if rms(delta) < 1E-8:
+        if rms(delta) < 1e-8:
             break
     if i == (max_iter - 1):
-        print('WARNING: fcnMSV2_t() reaching max iterations!')
+        print("WARNING: fcnMSV2_t() reaching max iterations!")
     # print('%i steps, residual rms = %.5f' % (i,rms(z-zhat)))
     return x.astype(np.float32)
 
@@ -95,6 +95,7 @@ def fcn2vintercept(A, U):
     C0 = np.zeros([nv, 3])
 
     import itertools
+
     comb = np.array(list(itertools.combinations(range(nf), 2)))
     j = comb[:, 0]
     k = comb[:, 1]
@@ -167,6 +168,7 @@ def fcnNvintercept(A, U):
 # EXPERIMENTAL ---------------------------------------------------------------------------------------------------------
 # EXPERIMENTAL ---------------------------------------------------------------------------------------------------------
 
+
 def fcnMSV1direct_t(K, P, B, vg, i):  # solves for 1 camera translation
     def loss_fn(x, u0, U, K, z):
         b0 = fcn2vintercept(np.vstack((u0[:-1], -x)), U) + x
@@ -180,7 +182,7 @@ def fcnMSV1direct_t(K, P, B, vg, i):  # solves for 1 camera translation
         U[:, j] = pixel2uvec(K, P[0:2, vg, j].T).T
     u0 = B[0, 0:3] - B[:nf, 0:3]
     x = np.array([0, 0, 1]) - u0[nf - 2]
-    Z = P[0:2, vg, i].ravel('F')
+    Z = P[0:2, vg, i].ravel("F")
 
     x0 = np.array([0, 0, 1])
 
@@ -219,7 +221,7 @@ def fcnMSV1direct_t(K, P, B, vg, i):  # solves for 1 camera translation
     # optimizer.step(closure)
 
     def grad_func(x, u0, U, K, z):  # calculates the gradient
-        dx = 1E-6  # for numerical derivatives
+        dx = 1e-6  # for numerical derivatives
         dx1, dx2, dx3 = [dx, 0, 0], [0, dx, 0], [0, 0, dx]
         b0 = fcn2vintercept(np.vstack((u0[:-1], -x)), U) + x
         f0 = rms(z - fzK(b0, K))
@@ -258,17 +260,25 @@ def fcnMSV1direct_t(K, P, B, vg, i):  # solves for 1 camera translation
         g, r[i] = grad_func(x, u0, U, K, Z)  # computes the gradient of the stochastic function
         m = beta_1 * m + (1 - beta_1) * g  # updates the moving averages of the gradient
         v = beta_2 * v + (1 - beta_2) * (g * g)  # updates the moving averages of the squared gradient
-        m_cap = m / (1 - (beta_1 ** i))  # calculates the bias-corrected estimates
-        v_cap = v / (1 - (beta_2 ** i))  # calculates the bias-corrected estimates
-        delta = (alpha * m_cap) / (v_cap ** 0.5 + epsilon)
+        m_cap = m / (1 - (beta_1**i))  # calculates the bias-corrected estimates
+        v_cap = v / (1 - (beta_2**i))  # calculates the bias-corrected estimates
+        delta = (alpha * m_cap) / (v_cap**0.5 + epsilon)
         x = x - delta  # updates the parameters
-        print('Residual %g,    Params: %s' % (r[i], x[:]))
+        print("Residual %g,    Params: %s" % (r[i], x[:]))
         xi[i] = x
-        if rms(delta) < 1E-5:  # convergence check
+        if rms(delta) < 1e-5:  # convergence check
             break
 
-    py.plot([go.Scatter(x=xi[:i, 0], y=xi[:i, 2], mode='markers',
-                        marker=dict(size='16', color=(np.log10(r[:i]).ravel()), colorscale='Viridis', showscale=True))])
+    py.plot(
+        [
+            go.Scatter(
+                x=xi[:i, 0],
+                y=xi[:i, 2],
+                mode="markers",
+                marker=dict(size="16", color=(np.log10(r[:i]).ravel()), colorscale="Viridis", showscale=True),
+            )
+        ]
+    )
 
     xhat, _ = fcnMSV1_t(K, P, B, vg, 2)
     uvec(B[1, 0:3] - B[0, 0:3])

@@ -14,7 +14,7 @@ def rpy2dcm(rpy):  # [roll, pitch, yaw] to direction cosine matrix
     C[1, 0] = cp * sy
     C[1, 1] = sr * sp * sy + cr * cy
     C[1, 2] = cr * sp * sy - sr * cy
-    C[2, 0] = - sp
+    C[2, 0] = -sp
     C[2, 1] = sr * cp
     C[2, 2] = cr * cp
     return C
@@ -35,13 +35,13 @@ def transform(X, rpy, t):  # transform X = X @ R + t
     C10 = cp * sy
     C11 = sr * sp * sy + cr * cy
     C12 = cr * sp * sy - sr * cy
-    C20 = - sp
+    C20 = -sp
     C21 = sr * cp
     C22 = cr * cp
 
-    return np.concatenate((C00 * x + C10 * y + C20 * z + t[0],
-                           C01 * x + C11 * y + C21 * z + t[1],
-                           C02 * x + C12 * y + C22 * z + t[2])).reshape((x.size, 3), order='F')
+    return np.concatenate(
+        (C00 * x + C10 * y + C20 * z + t[0], C01 * x + C11 * y + C21 * z + t[1], C02 * x + C12 * y + C22 * z + t[2])
+    ).reshape((x.size, 3), order="F")
 
 
 def dcm2rpy(R):  # direction cosine matrix to [roll, pitch, yaw] aka [phi, theta, psi]
@@ -61,6 +61,7 @@ def quat2dcm(q):  # 3 element quaternion representation (roll is norm(q))
 def dcm2quat(R):  # 3 element quaternion representation (roll is norm(q))
     r, p, y = dcm2rpy(R)
     return sc2cc(np.array([r + 10, p, y]))
+
 
 # def quat2dcm(q):  # verified against MATLAB
 #     s, x, y, z = q / norm(q)

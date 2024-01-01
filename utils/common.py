@@ -4,8 +4,8 @@ import numpy as np
 import torch
 
 # Set printoptions
-torch.set_printoptions(linewidth=320, precision=5, profile='long')
-np.set_printoptions(linewidth=320, formatter={'float_kind': '{:11.5g}'.format})  # format short g, %precision=5
+torch.set_printoptions(linewidth=320, precision=5, profile="long")
+np.set_printoptions(linewidth=320, formatter={"float_kind": "{:11.5g}".format})  # format short g, %precision=5
 
 
 def norm(x, axis=None):
@@ -121,9 +121,9 @@ def pscale(p3):  # normalizes camera coordinates so last column = 1
     return p3[:, 0:2] / p3[:, 2:3]
 
 
-def worldPointsLicensePlate(country='EU'):  # Returns x, y coordinates of license plate
+def worldPointsLicensePlate(country="EU"):  # Returns x, y coordinates of license plate
     # https://en.wikipedia.org/wiki/Vehicle_registration_plate
-    if country == 'Chile':
+    if country == "Chile":
         size = [0.3725, 0.1275, 0]  # [0.36 0.13] (m) license plate size (Chile)
     else:  # EU
         size = [0.520, 0.110, 0]  # 520 x 110 mm (EU)
@@ -135,6 +135,4 @@ def cam2ned():  # x_ned(3x5) = R * x_cam(3x5)   - EQUALS -   x_ned(5x3) = x_cam(
     # +X_ned(NORTH) = +Z_cam(NORTH)
     # +Y_ned(EAST)  = +X_cam(EAST)
     # +Z_ned(DOWN)  = +Y_cam(DOWN)
-    return np.array([[0, 0, 1],
-                     [1, 0, 0],
-                     [0, 1, 0]])  # R
+    return np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])  # R
