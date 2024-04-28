@@ -3,6 +3,7 @@ from utils.common import *
 
 # @profile
 def rpy2dcm(rpy):  # [roll, pitch, yaw] to direction cosine matrix
+    """Converts roll, pitch, and yaw angles (rpy) to a direction cosine matrix; input shape [3]."""
     sr, cr = math.sin(rpy[0]), math.cos(rpy[0])
     sp, cp = math.sin(rpy[1]), math.cos(rpy[1])
     sy, cy = math.sin(rpy[2]), math.cos(rpy[2])
@@ -22,6 +23,7 @@ def rpy2dcm(rpy):  # [roll, pitch, yaw] to direction cosine matrix
 
 # @profile
 def transform(X, rpy, t):  # transform X = X @ R + t
+    """Applies a rotation and translation transform to points `X` using rotation `rpy` and translation `t`."""
     sr, cr = math.sin(rpy[0]), math.cos(rpy[0])
     sp, cp = math.sin(rpy[1]), math.cos(rpy[1])
     sy, cy = math.sin(rpy[2]), math.cos(rpy[2])
@@ -45,6 +47,7 @@ def transform(X, rpy, t):  # transform X = X @ R + t
 
 
 def dcm2rpy(R):  # direction cosine matrix to [roll, pitch, yaw] aka [phi, theta, psi]
+    """Converts direction cosine matrix to roll, pitch, and yaw (`[phi, theta, psi]`)."""
     rpy = np.zeros(3)
     rpy[0] = math.atan(R[2, 1] / R[2, 2])
     rpy[1] = math.asin(-R[2, 0])
@@ -53,12 +56,18 @@ def dcm2rpy(R):  # direction cosine matrix to [roll, pitch, yaw] aka [phi, theta
 
 
 def quat2dcm(q):  # 3 element quaternion representation (roll is norm(q))
+    """Converts a quaternion to direction cosine matrix; expects `q` as [x, y, z, w], returns 3x3 matrix."""
     r = norm(q)  # (0.5 - 1.5) for (-180 to +180 deg roll)
     rpy = [(r - 10), math.asin(-q[2] / r), math.atan(q[1] / q[0])]
     return rpy2dcm(rpy)
 
 
 def dcm2quat(R):  # 3 element quaternion representation (roll is norm(q))
+    """
+    Converts direction cosine matrix `R` to quaternion; returns quaternion as [x, y, z, w].
+
+    Expects `R` as a 3x3 matrix.
+    """
     r, p, y = dcm2rpy(R)
     return sc2cc(np.array([r + 10, p, y]))
 

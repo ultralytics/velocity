@@ -4,6 +4,10 @@ from utils.NLS import fzK
 
 # @profile
 def fcnMSV1_t(K, P, B, vg, ii):  # solves for 1 camera translation
+    """Solves for 1 camera translation by optimizing translation vectors given camera matrix K, pixel coordinates P,
+    baseline B, valid mask vg, and image index ii.
+    """
+
     # vg = np.isnan(P[0, :, i])==False
     nf = ii + 1
     ng = vg.sum()
@@ -45,6 +49,8 @@ def fcnMSV1_t(K, P, B, vg, ii):  # solves for 1 camera translation
 
 
 def fcnMSV2_t(K, P, B, vg, i):  # solves for 1 camera translation
+    """Solves for 1 camera translation via iterative minimization, returns optimized camera parameters as np.float32."""
+
     # vg = np.isnan(P[0, :, i])==False
     nf = i + 1
     ng = vg.sum()
@@ -90,6 +96,10 @@ def fcnMSV2_t(K, P, B, vg, i):  # solves for 1 camera translation
 
 # @profile
 def fcn2vintercept(A, U):
+    """Calculates 3D intercepts of vectors (U) from origins (A) for camera frame combinations, returning nx3 tie point
+    centers.
+    """
+
     # A = nx3 camera origins, ux1 = nxnp x unit vectors
     _, nf, nv = U.shape  # 3, nframes, npoints
     C0 = np.zeros([nv, 3])
@@ -135,6 +145,7 @@ def fcn2vintercept(A, U):
 
 # @profile
 def fcnNvintercept(A, U):
+    """Calculates the vector intercept using frame points and velocities, returning a (n_points, 3) array."""
     _, nf, nv = U.shape  # 3, nframes, npoints
     C0 = np.zeros((nv, 3))
 
@@ -170,6 +181,8 @@ def fcnNvintercept(A, U):
 
 
 def fcnMSV1direct_t(K, P, B, vg, i):  # solves for 1 camera translation
+    """Solves for 1 camera translation using minimization of reprojection error through gradient descent."""
+
     def loss_fn(x, u0, U, K, z):
         b0 = fcn2vintercept(np.vstack((u0[:-1], -x)), U) + x
         zhat = fzK(b0, K)

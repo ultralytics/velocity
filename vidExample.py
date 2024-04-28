@@ -10,6 +10,7 @@ from utils.NLS import *
 
 # @profile
 def vidExamplefcn():
+    """Processes video or image data for vehicle speed analysis, tracking, and camera pose estimation."""
     isVideo = True
     patha = "./data/"
     pathb = "./matlab/"
