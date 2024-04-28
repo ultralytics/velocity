@@ -1,5 +1,5 @@
 def filenamesplit(string):  # splits a full filename string into path, file, and extension.
-    # Example:  path, file, extension, fileext = filenamesplit('/Users/glennjocher/Downloads/IMG_4124.JPG')
+    """Splits a full filename string into path, file, and extension; returns a tuple (path, file, extension, fileext)."""
     i = string.rfind("/") + 1
     j = string.rfind(".")
     path, file, extension = string[:i], string[i:j], string[j:]
@@ -7,5 +7,6 @@ def filenamesplit(string):  # splits a full filename string into path, file, and
 
 
 def printd(dictionary):  # print dictionary
+    """Prints each key-value pair in a dictionary, with keys aligned for readability."""
     for tag in dictionary.keys():
         print("%40s: %s" % (tag, dictionary[tag]))
