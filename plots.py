@@ -1,5 +1,5 @@
 import numpy as np
-from bokeh import io, plotting, palettes, models
+from bokeh import io, models, palettes, plotting
 from bokeh.layouts import column, row
 
 
