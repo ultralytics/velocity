@@ -5,7 +5,7 @@ from bokeh.layouts import column, row
 
 # @profile
 def plotresults(cam, im, P, S, B, bbox):
-    # Bokeh Plotting
+    """Generates interactive Bokeh plots for image analysis, including image with bounding box, 3D position, distance, and speed."""
     io.reset_output()
     io.output_file("bokeh plots.html", title="bokeh plots")
     h, w = im.shape
@@ -115,7 +115,7 @@ def plotresults(cam, im, P, S, B, bbox):
 
 
 def bokeh_colors(n):
-    # https: // bokeh.pydata.org / en / latest / docs / reference / palettes.html
+    """Generates a color palette from Bokeh suitable for plots, supporting up to 256 distinct colors based on `n`."""
     # returns appropriate 10, 20 or 256 colors for plotting. n is the maximum required colors
 
     if n < 11:
@@ -132,7 +132,7 @@ def bokeh_colors(n):
 
 
 def imshow(im, im2=None, p1=None, p2=None):
-    # Bokeh Plotting
+    """Displays image `im` and optionally `im2` using Bokeh, supports RGB and Greyscale images, overlays points `p1`, `p2`."""
     io.reset_output()
     io.output_file("bokeh plots.html", title="imshow")
     colorImage = len(im.shape) == 3
