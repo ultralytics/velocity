@@ -38,26 +38,34 @@ def addcol1(x):  # append a ones column to right side
 
 
 def image2world3(R, t, p):  # image coordinate to world coordinate
-    """Converts image coordinates to world coordinates using rotation matrix `R`, translation vector `t`, and points `p`."""
+    """Converts image coordinates to world coordinates using rotation matrix `R`, translation vector `t`, and points
+    `p`.
+    """
     return addcol1(p) @ R + t
 
 
 def image2world(K, R, t, p):  # MATLAB pointsToworld copy
-    """Converts image coordinates `p` to world coordinates using camera intrinsics `K`, rotation `R`, and translation `t`."""
+    """Converts image coordinates `p` to world coordinates using camera intrinsics `K`, rotation `R`, and translation
+    `t`.
+    """
     tform = np.concatenate([R[0:2, :], t[None]]) @ K
     pw = addcol1(p) @ np.linalg.inv(tform)
     return pw[:, 0:2] / pw[:, 2:3]
 
 
 def world2image(K, R, t, pw):  # MATLAB worldToImage copy
-    """Converts world coordinates `pw` to image coordinates using camera intrinsics `K`, rotation `R`, and translation `t`."""
+    """Converts world coordinates `pw` to image coordinates using camera intrinsics `K`, rotation `R`, and translation
+    `t`.
+    """
     camMatrix = np.concatenate([R, t[None]]) @ K
     p = addcol1(pw) @ camMatrix  # nx4 * 4x3
     return p[:, 0:2] / p[:, 2:3]
 
 
 def elaz(x):  # cartesian coordinate to spherical el and az angles
-    """Converts Cartesian coordinates `x` to spherical elevation and azimuth angles; input shape can be (3,) or (N, 3)."""
+    """Converts Cartesian coordinates `x` to spherical elevation and azimuth angles; input shape can be (3,) or (N,
+    3).
+    """
     s = x.shape
     r = norm(x)
     if len(s) == 1:
@@ -118,7 +126,9 @@ def pixel2uvec(K, p):
 
 
 def fcnsigmarejection(x, srl=3.0, ni=3):
-    """Applies sigma rejection for outlier removal in `x`, with sigma level `srl` and iterations `ni`, returning filtered array and mask."""
+    """Applies sigma rejection for outlier removal in `x`, with sigma level `srl` and iterations `ni`, returning
+    filtered array and mask.
+    """
     v = np.empty_like(x, dtype=bool)
     v[:] = True
     x = x.ravel()
@@ -137,7 +147,11 @@ def pscale(p3):  # normalizes camera coordinates so last column = 1
 
 
 def worldPointsLicensePlate(country="EU"):  # Returns x, y coordinates of license plate
-    """Returns x, y coordinates of a standard license plate for given country; defaults to EU. Usage: `worldPointsLicensePlate(country='Chile')`."""
+    """
+    Returns x, y coordinates of a standard license plate for given country; defaults to EU.
+
+    Usage: `worldPointsLicensePlate(country='Chile')`.
+    """
     if country == "Chile":
         size = [0.3725, 0.1275, 0]  # [0.36 0.13] (m) license plate size (Chile)
     else:  # EU

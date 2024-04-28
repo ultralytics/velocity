@@ -37,7 +37,9 @@ def estimateAffine2D_SURF(im1, im2, p1, scale=1.0):
 
 # @profile
 def cv2calcOpticalFlowPyrLK(im1, im2, p1, p2hat=None, fbt=None, **lk_param):
-    """Tracks keypoint motion between two images using Pyramidal Lucas-Kanade method; returns new points, status, and error."""
+    """Tracks keypoint motion between two images using Pyramidal Lucas-Kanade method; returns new points, status, and
+    error.
+    """
     # _, pyr1 = cv2.buildOpticalFlowPyramid(
     #    im0_roi, winSize=lk_param['winSize'], maxLevel=lk_param['maxLevel'], withDerivatives=True)
     # _, pyr2 = cv2.buildOpticalFlowPyramid(
@@ -53,7 +55,9 @@ def cv2calcOpticalFlowPyrLK(im1, im2, p1, p2hat=None, fbt=None, **lk_param):
 
 # @profile
 def KLTregional(im0, im, p0, T, lk_param, fbt=1.0, translateFlag=False):
-    """Tracks regional keypoints using the Kanade-Lucas-Tomasi (KLT) algorithm with forward-backward error thresholding."""
+    """Tracks regional keypoints using the Kanade-Lucas-Tomasi (KLT) algorithm with forward-backward error
+    thresholding.
+    """
     T = T.astype(np.float32)
     # 1. Warp current image to past image frame
     x0, x1, y0, y1 = boundingRect(p0, im.shape, border=(50, 50))
@@ -96,7 +100,9 @@ def KLTregional(im0, im, p0, T, lk_param, fbt=1.0, translateFlag=False):
 
 # @profile
 def KLTmain(im, im0, im0_small, p0):
-    """Runs the Kanade-Lucas-Tomasi (KLT) feature tracking algorithm with coarse-to-fine tracking and affine transformation."""
+    """Runs the Kanade-Lucas-Tomasi (KLT) feature tracking algorithm with coarse-to-fine tracking and affine
+    transformation.
+    """
 
     # Parameters for KLT
     EPS = cv2.TERM_CRITERIA_EPS

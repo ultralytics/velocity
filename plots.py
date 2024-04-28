@@ -1,11 +1,13 @@
 import numpy as np
-from bokeh import io, plotting, palettes, models
+from bokeh import io, models, palettes, plotting
 from bokeh.layouts import column, row
 
 
 # @profile
 def plotresults(cam, im, P, S, B, bbox):
-    """Generates interactive Bokeh plots for image analysis, including image with bounding box, 3D position, distance, and speed."""
+    """Generates interactive Bokeh plots for image analysis, including image with bounding box, 3D position, distance,
+    and speed.
+    """
     io.reset_output()
     io.output_file("bokeh plots.html", title="bokeh plots")
     h, w = im.shape
@@ -132,7 +134,9 @@ def bokeh_colors(n):
 
 
 def imshow(im, im2=None, p1=None, p2=None):
-    """Displays image `im` and optionally `im2` using Bokeh, supports RGB and Greyscale images, overlays points `p1`, `p2`."""
+    """Displays image `im` and optionally `im2` using Bokeh, supports RGB and Greyscale images, overlays points `p1`,
+    `p2`.
+    """
     io.reset_output()
     io.output_file("bokeh plots.html", title="imshow")
     colorImage = len(im.shape) == 3

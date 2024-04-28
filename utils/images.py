@@ -5,7 +5,9 @@ from utils.strings import *
 
 
 def boundingRect(x, imshape, border=(0, 0)):
-    """Calculates bounded rectangle for `x` with optional border, adjusting to `imshape` limits; x (contours), imshape (shape), border ((w,h))."""
+    """Calculates bounded rectangle for `x` with optional border, adjusting to `imshape` limits; x (contours), imshape
+    (shape), border ((w,h)).
+    """
     x0, y0, width, height = cv2.boundingRect(x)
     x0, y0, x1, y1 = x0 - border[0], y0 - border[1], x0 + width + border[0], y0 + height + border[1]
     if x0 < 1:
@@ -80,7 +82,9 @@ def dms2degrees(dms):  # maps GPS [degrees minutes seconds] to decimal degrees
 
 
 def hemisphere2sign(x):  # converts hemisphere strings 'N', 'S', 'E', 'W' to signs 1, -1, 1, -1
-    """Converts hemisphere strings ('N', 'S', 'E', 'W') to signs (1, -1) respectively; `x` is an array of hemisphere characters."""
+    """Converts hemisphere strings ('N', 'S', 'E', 'W') to signs (1, -1) respectively; `x` is an array of hemisphere
+    characters.
+    """
     sign = np.zeros(len(x))
     sign[(x == "N") | (x == "E")] = 1
     sign[(x == "S") | (x == "W")] = -1
@@ -89,7 +93,9 @@ def hemisphere2sign(x):  # converts hemisphere strings 'N', 'S', 'E', 'W' to sig
 
 # # @profile
 def getCameraParams(fullfilename, platform="iPhone 6s"):  # returns camera parameters and file information structure cam
-    """Extracts camera parameters and info structure for images/videos from a given file path, supports iPhone 6s platform."""
+    """Extracts camera parameters and info structure for images/videos from a given file path, supports iPhone 6s
+    platform.
+    """
     pathname, _, extension, filename = filenamesplit(fullfilename)
     isvideo = (extension == ".MOV") | (extension == ".mov") | (extension == ".m4v")
 

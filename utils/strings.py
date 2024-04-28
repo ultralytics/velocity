@@ -1,5 +1,7 @@
 def filenamesplit(string):  # splits a full filename string into path, file, and extension.
-    """Splits a full filename string into path, file, and extension; returns a tuple (path, file, extension, fileext)."""
+    """Splits a full filename string into path, file, and extension; returns a tuple (path, file, extension,
+    fileext).
+    """
     i = string.rfind("/") + 1
     j = string.rfind(".")
     path, file, extension = string[:i], string[i:j], string[j:]

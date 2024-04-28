@@ -5,7 +5,11 @@ from utils.transforms import *
 
 # @profile
 def estimateWorldCameraPose(K, p, p3, t=np.array([0, 0, 1]), R=np.eye(3), findR=False):
-    """Estimates camera pose from world coordinates using non-linear least squares. Args: K (array): camera matrix, p (2D array): image points, p3 (3D array): world points, t (array, optional): initial translation, R (array, optional): initial rotation, findR (bool, optional): if True estimates rotation. Returns: tuple (translation, rotation, residuals, projected points)."""
+    """
+    Estimates camera pose from world coordinates using non-linear least squares.
+
+    Args: K (array): camera matrix, p (2D array): image points, p3 (3D array): world points, t (array, optional): initial translation, R (array, optional): initial rotation, findR (bool, optional): if True estimates rotation. Returns: tuple (translation, rotation, residuals, projected points).
+    """
 
     # Linear solution
     # Re, te = extrinsicsPlanar(p, p3, K)
@@ -73,13 +77,17 @@ def fzK(a, K):
 
 
 def fzC(a, K, R, t=np.zeros((1, 3))):
-    """Applies perspective scaling to points `a` using camera matrix from `K`, `R`, and optionally `t`, returning scaled points."""
+    """Applies perspective scaling to points `a` using camera matrix from `K`, `R`, and optionally `t`, returning scaled
+    points.
+    """
     camMatrix = np.concatenate([R, t]) @ K
     return pscale(addcol1(a) @ camMatrix)
 
 
 def fcnLS_R(K, p, pw):  # MSVM paper EQN 20
-    """Solves for rotation matrix `R` from camera matrix `K`, pixel `p`, and world points `pw` using SVD and least squares method."""
+    """Solves for rotation matrix `R` from camera matrix `K`, pixel `p`, and world points `pw` using SVD and least
+    squares method.
+    """
     z = pixel2uvec(K, p)
     H = uvec(pw)
     R = np.linalg.solve(H.T @ H, H.T) @ z
@@ -90,7 +98,9 @@ def fcnLS_R(K, p, pw):  # MSVM paper EQN 20
 
 # @profile
 def fcnNLS_t(K, p, pw, x):
-    """Estimates translation vector `x` using Non-Linear Least Squares for camera calibration with given `K`, `p`, and `pw`."""
+    """Estimates translation vector `x` using Non-Linear Least Squares for camera calibration with given `K`, `p`, and
+    `pw`.
+    """
     # K = 3x3 intrinsic matrix
     # p = nx2 image points
     # pw = nx3 world points = pc @ cam2ned().T
@@ -173,7 +183,9 @@ def fcnNLS_Rt(K, p, pw, x):
 
 
 def fcnNLS_batch(K, P, pw, cw):  # solves for pxyz, cxyz[1:], crpy[1:]
-    """Solves for camera and tiepoint positions and orientations given keypoints and initial estimates; iteratively minimizes reprojection errors."""
+    """Solves for camera and tiepoint positions and orientations given keypoints and initial estimates; iteratively
+    minimizes reprojection errors.
+    """
     v = np.isfinite(P[4]).sum(1) == P.shape[2]  # valid tracks ( > 2 frames long)
     P, pw = P[:, v], pw[v]
     _, nt, nc = P.shape  # number of tiepoints, number of cameras
@@ -238,7 +250,9 @@ def fcnNLS_batch(K, P, pw, cw):  # solves for pxyz, cxyz[1:], crpy[1:]
 
 
 def fcnNLS_batch2(K, P, pw, cw):  # solves for pxyz, [el, az, c_ranges[1:]]
-    """Solves for camera and tiepoint positions by fitting to projections, returns camera positions and tiepoint positions."""
+    """Solves for camera and tiepoint positions by fitting to projections, returns camera positions and tiepoint
+    positions.
+    """
     v = np.isfinite(P[4]).sum(1) == P.shape[2]  # valid tracks ( > 2 frames long)
     P, pw = P[:, v], pw[v]
     _, nt, nc = P.shape  # number of tiepoints, number of cameras
