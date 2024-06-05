@@ -7,8 +7,6 @@ Welcome to the [Ultralytics Velocity](https://github.com/ultralytics/velocity) r
 
 [![Ultralytics Actions](https://github.com/ultralytics/velocity/actions/workflows/format.yml/badge.svg)](https://github.com/ultralytics/velocity/actions/workflows/format.yml) <a href="https://ultralytics.com/discord"><img alt="Discord" src="https://img.shields.io/discord/1089800235347353640?logo=discord&logoColor=white&label=Discord&color=blue"></a>
 
-
-
 ## 🎯 Project Objectives
 
 This project aims to utilize advanced ML and SFM approaches to accurately estimate vehicle speeds from various forms of imagery. By doing so, we hope to contribute valuable tools and methods that can be applied in domains such as traffic monitoring, autonomous driving systems, and road safety enhancements.
