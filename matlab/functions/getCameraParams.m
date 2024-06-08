@@ -1,3 +1,5 @@
+# Ultralytics YOLO 🚀, AGPL-3.0 License
+
 function cam=getCameraParams(fname,platform)
 % returns camera parameters and file information
 % fname: video or image(s) file name(s) i.e. mymovie.mov or IMG_3797.jpg
