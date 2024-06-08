@@ -1,3 +1,5 @@
+# Ultralytics YOLO 🚀, AGPL-3.0 License
+
 function []=extractStills()
 [fname, pname] = uigetfile({'*.mov','MOV Files (*.mov)'},'Select images','MultiSelect','off');
 saverFolder=[fname(1:end-4) ' Stills' filesep];
