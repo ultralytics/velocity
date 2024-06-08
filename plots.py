@@ -1,3 +1,5 @@
+# Ultralytics YOLO 🚀, AGPL-3.0 License
+
 import numpy as np
 from bokeh import io, models, palettes, plotting
 from bokeh.layouts import column, row
