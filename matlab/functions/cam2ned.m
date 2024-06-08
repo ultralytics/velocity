@@ -1,3 +1,5 @@
+# Ultralytics YOLO 🚀, AGPL-3.0 License
+
 function R = cam2ned()
 %x_ned = R*x_cam;
 
