@@ -1,5 +1,7 @@
+# Ultralytics YOLO 🚀, AGPL-3.0 License
+
 function [] = runExample()
-%this file imports a short movie of cars in Vi�a del Mar to track speeds
+%this file imports a short movie of cars in Viña del Mar to track speeds
 clc; clear; close all; 
 % pname=fcnpathm1(mfilename('fullpath')); cd(pname); 
 format short g
