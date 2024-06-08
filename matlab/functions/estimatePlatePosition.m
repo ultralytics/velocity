@@ -1,3 +1,5 @@
+# Ultralytics YOLO 🚀, AGPL-3.0 License
+
 function [t, R, inliers, residuals, imagePointsProjected] = estimatePlatePosition(cameraParams,imagePoints,worldPoints,I)
 n = size(imagePoints,1);
 imagePoints=double(imagePoints);
