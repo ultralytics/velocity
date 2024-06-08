@@ -1,5 +1,6 @@
 # Ultralytics YOLO 🚀, AGPL-3.0 License https://ultralytics.com/license
 
+
 def filenamesplit(string):  # splits a full filename string into path, file, and extension.
     """Splits a full filename string into path, file, and extension; returns a tuple (path, file, extension,
     fileext).
