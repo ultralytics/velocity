@@ -1,3 +1,5 @@
+# Ultralytics YOLO 🚀, AGPL-3.0 License
+
 function llat = fcnEXIF2LLAT(E)
 %E = image exif info i.e. E = imfinfo('beach.jpg')
 %llat = [lat, long, alt, time]
