@@ -1,4 +1,4 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 License, learn more at https://ultralytics.com/license
+# Ultralytics YOLO 🚀, AGPL-3.0 https://ultralytics.com/license/
 
 import numpy as np
 from bokeh import io, models, palettes, plotting
