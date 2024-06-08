@@ -1,3 +1,5 @@
+# Ultralytics YOLO 🚀, AGPL-3.0 License
+
 import os
 
 import cv2
