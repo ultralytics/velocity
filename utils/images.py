@@ -1,4 +1,5 @@
 import cv2
+
 from utils.common import *
 from utils.strings import *
 
