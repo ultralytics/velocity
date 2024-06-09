@@ -182,7 +182,7 @@ def fcnNLS_Rt(K, p, pw, x):
     return R, t
 
 
-def fcnNLS_batch(K, P, pw, cw):    # solves for pxyz, cxyz[1:], crpy[1:]
+def fcnNLS_batch(K, P, pw, cw):  # solves for pxyz, cxyz[1:], crpy[1:]
     """Solves for camera and tiepoint positions and orientations given keypoints and initial estimates; iteratively
     minimizes reprojection errors.
     """
@@ -203,7 +203,7 @@ def fcnNLS_batch(K, P, pw, cw):    # solves for pxyz, cxyz[1:], crpy[1:]
     range_cal = norm(cw[1])
 
     def fzKautograd_batch(x, K, nc, nt):  # for autograd
-        pw = x[:nt * 3].reshape(nt, 3)
+        pw = x[: nt * 3].reshape(nt, 3)
         alist = [pw]  # = pw @ np.eye(3) + np.zeros((1,3)), camera 1 fixed
         for i in range(nc):
             ia = nt * 3 + i * 3  # pos start
@@ -249,7 +249,7 @@ def fcnNLS_batch(K, P, pw, cw):    # solves for pxyz, cxyz[1:], crpy[1:]
     return cw, pw
 
 
-def fcnNLS_batch2(K, P, pw, cw):    # solves for pxyz, [el, az, c_ranges[1:]]
+def fcnNLS_batch2(K, P, pw, cw):  # solves for pxyz, [el, az, c_ranges[1:]]
     """Solves for camera and tiepoint positions by fitting to projections, returns camera positions and tiepoint
     positions.
     """
