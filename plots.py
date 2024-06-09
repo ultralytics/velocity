@@ -12,13 +12,10 @@ def plotresults(cam, im, P, S, B, bbox):
     io.output_file("bokeh plots.html", title="bokeh plots")
     h, w = im.shape
     n = P.shape[2]  # number of images
-    xn = list(range(0, n, 1))
+    xn = list(range(n))
     # colors = bokeh_colors(n)
     colorbyframe = True
-    colors = []
-    for i in np.linspace(0, 255, n, dtype=int):
-        colors.append(palettes.Viridis256[i])
-
+    colors = [palettes.Viridis256[i] for i in np.linspace(0, 255, n, dtype=int)]
     # Setup tools
     hoverImage = models.HoverTool(tooltips=[("(x, y)", "$x{1.11}, $y{1.11}")], point_policy="follow_mouse")
 
@@ -28,8 +25,8 @@ def plotresults(cam, im, P, S, B, bbox):
         y_range=(h, 0),
         plot_width=round(600 * w / h),
         plot_height=600,
-        x_axis_label="pixel (1 - " + str(w) + ")",
-        y_axis_label="pixel (1 - " + str(h) + ")",
+        x_axis_label=f"pixel (1 - {str(w)})",
+        y_axis_label=f"pixel (1 - {str(h)})",
         title=cam["filename"],
         tools="box_zoom,pan,save,reset,wheel_zoom",
         active_scroll="wheel_zoom",
@@ -54,7 +51,13 @@ def plotresults(cam, im, P, S, B, bbox):
         # a.scatter(P[2].ravel()[i], P[3].ravel()[i], size=9, fill_color=fc, fill_alpha=0.3, line_color=None)
         for i in range(n - 1):  # list((0, n - 1)):  # plot first and last
             # for i in range(n):  # plot all
-            a.circle(P[0, :, i], P[1, :, i], color=colors[i], legend="image " + str(i), line_width=1)
+            a.circle(
+                P[0, :, i],
+                P[1, :, i],
+                color=colors[i],
+                legend=f"image {str(i)}",
+                line_width=1,
+            )
             a.circle(P[2, :, i], P[3, :, i], color=colors[i], size=10, alpha=0.6)
     else:
         a.circle(P[0].ravel(), P[1].ravel(), color=colors[0], legend="Points", line_width=2)
@@ -125,10 +128,7 @@ def bokeh_colors(n):
     elif n < 21:
         return palettes.Category20[20]
     elif n < 256:
-        g = []
-        for i in np.linspace(0, 255, n, dtype=int):
-            g.append(palettes.Viridis256[i])
-        return g
+        return [palettes.Viridis256[i] for i in np.linspace(0, 255, n, dtype=int)]
     else:
         return palettes.Viridis256
 
@@ -155,8 +155,8 @@ def imshow(im, im2=None, p1=None, p2=None):
         y_range=(h, 0),
         plot_width=round(800 * w / h),
         plot_height=800,
-        x_axis_label="pixel (1 - " + str(w) + ")",
-        y_axis_label="pixel (1 - " + str(h) + ")",
+        x_axis_label=f"pixel (1 - {str(w)})",
+        y_axis_label=f"pixel (1 - {str(h)})",
         title="image",
         tools="box_zoom,pan,save,reset,wheel_zoom,crosshair",
         active_scroll="wheel_zoom",
@@ -200,8 +200,8 @@ def imshow(im, im2=None, p1=None, p2=None):
             y_range=(h, 0),
             plot_width=round(600 * w / h),
             plot_height=600,
-            x_axis_label="pixel (1 - " + str(w) + ")",
-            y_axis_label="pixel (1 - " + str(h) + ")",
+            x_axis_label=f"pixel (1 - {str(w)})",
+            y_axis_label=f"pixel (1 - {str(h)})",
             title="image",
             tools="box_zoom,pan,save,reset,wheel_zoom,crosshair",
             active_scroll="wheel_zoom",
