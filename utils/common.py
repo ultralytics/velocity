@@ -146,7 +146,7 @@ def pscale(p3):  # normalizes camera coordinates so last column = 1
     return p3[:, 0:2] / p3[:, 2:3]
 
 
-def worldPointsLicensePlate(country="EU"):    # Returns x, y coordinates of license plate
+def worldPointsLicensePlate(country="EU"):  # Returns x, y coordinates of license plate
     """
     Returns x, y coordinates of a standard license plate for given country; defaults to EU.
 
