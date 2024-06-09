@@ -88,7 +88,7 @@ def hemisphere2sign(x):  # converts hemisphere strings 'N', 'S', 'E', 'W' to sig
 
 
 # # @profile
-def getCameraParams(fullfilename, platform="iPhone 6s"):    # returns camera parameters and file information structure cam
+def getCameraParams(fullfilename, platform="iPhone 6s"):  # returns camera parameters and file information structure cam
     """Extracts camera parameters and info structure for images/videos from a given file path, supports iPhone 6s
     platform.
     """
@@ -132,7 +132,7 @@ def getCameraParams(fullfilename, platform="iPhone 6s"):    # returns camera par
             frame_count = 1
 
             focalLength_pix = [3486, 3486]
-                    # focalLength_pix = exif['EXIF FocalLength'] / sensorSize(1) * width
+            # focalLength_pix = exif['EXIF FocalLength'] / sensorSize(1) * width
         skew = 0
     elif platform == "iPhone x":
         "fill in here"

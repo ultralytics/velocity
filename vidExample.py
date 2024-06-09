@@ -168,7 +168,7 @@ def vidExamplefcn():
         # plots.imshow(cv2.cvtColor(imrgb,cv2.COLOR_BGR2HSV_FULL)[:,:,0])
         im_gaussian = cv2.GaussianBlur(im, (3, 3), 0)
         im_canny = cv2.Canny(im_gaussian, 100, 200)
-            # plots.imshow(cv2.GaussianBlur(im_canny, (9, 9), 0))
+        # plots.imshow(cv2.GaussianBlur(im_canny, (9, 9), 0))
 
     if isVideo:
         cap.release()  # Release the video capture object

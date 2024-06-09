@@ -48,7 +48,7 @@ def fcnMSV1_t(K, P, B, vg, ii):  # solves for 1 camera translation
     return x.astype(np.float32), b0
 
 
-def fcnMSV2_t(K, P, B, vg, i):    # solves for 1 camera translation
+def fcnMSV2_t(K, P, B, vg, i):  # solves for 1 camera translation
     """Solves for 1 camera translation via iterative minimization, returns optimized camera parameters as np.float32."""
 
     # vg = np.isnan(P[0, :, i])==False
