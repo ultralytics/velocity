@@ -10,14 +10,10 @@ def boundingRect(x, imshape, border=(0, 0)):
     """
     x0, y0, width, height = cv2.boundingRect(x)
     x0, y0, x1, y1 = x0 - border[0], y0 - border[1], x0 + width + border[0], y0 + height + border[1]
-    if x0 < 1:
-        x0 = 1
-    if y0 < 1:
-        y0 = 1
-    if x1 > imshape[1]:
-        x1 = imshape[1]
-    if y1 > imshape[0]:
-        y1 = imshape[0]
+    x0 = max(x0, 1)
+    y0 = max(y0, 1)
+    x1 = min(x1, imshape[1])
+    y1 = min(y1, imshape[0])
     return x0, x1, y0, y1
 
 
@@ -92,7 +88,7 @@ def hemisphere2sign(x):  # converts hemisphere strings 'N', 'S', 'E', 'W' to sig
 
 
 # # @profile
-def getCameraParams(fullfilename, platform="iPhone 6s"):  # returns camera parameters and file information structure cam
+def getCameraParams(fullfilename, platform="iPhone 6s"):    # returns camera parameters and file information structure cam
     """Extracts camera parameters and info structure for images/videos from a given file path, supports iPhone 6s
     platform.
     """
@@ -121,13 +117,9 @@ def getCameraParams(fullfilename, platform="iPhone 6s"):  # returns camera param
             # https://photo.stackexchange.com/questions/86075/does-the-iphones-focal-length-differ-when-taking-video-vs-photos
             diagonalRatio = math.sqrt(4032**2 + 3024**2) / math.sqrt(3840**2 + 2160**2)
 
-            skew = 0
             focalLength_pix = np.array([3486, 3486]) * diagonalRatio
 
-            if width > height:  # 1 = landscape, 6 = vertical
-                orientation = 1
-            else:
-                orientation = 6
+            orientation = 1 if width > height else 6
         else:  # 12MP IMAGE 4032x3024
             cap = []
             exif = importEXIF(fullfilename)
@@ -139,9 +131,9 @@ def getCameraParams(fullfilename, platform="iPhone 6s"):  # returns camera param
             fps = 0
             frame_count = 1
 
-            skew = 0
             focalLength_pix = [3486, 3486]
-            # focalLength_pix = exif['EXIF FocalLength'] / sensorSize(1) * width
+                    # focalLength_pix = exif['EXIF FocalLength'] / sensorSize(1) * width
+        skew = 0
     elif platform == "iPhone x":
         "fill in here"
 
