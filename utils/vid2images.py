@@ -1,7 +1,6 @@
 import os
 
 import cv2
-
 import utils.common
 
 PATH = "/Users/glennjocher/Downloads/DATA/VSM/chessboard/IMG_4414.MOV"
