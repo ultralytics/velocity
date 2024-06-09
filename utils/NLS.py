@@ -112,7 +112,7 @@ def fcnNLS_t(K, p, pw, x):
     max_iter = 30
     mdm = np.eye(3) * 1  # marquardt damping matrix (eye times damping coefficient)
     for i in range(max_iter):
-        b0 = pw + x[0:4]
+        b0 = pw + x[:4]
         zhat = fzK(b0, K).ravel()
         JT = fzK(np.concatenate((b0 + dx1, b0 + dx2, b0 + dx3), 0), K).reshape(3, n * 2)
         JT = (JT - zhat) / dx  # J Transpose
@@ -153,7 +153,7 @@ def fcnNLS_Rt(K, p, pw, x):
     mdm = np.eye(6) * 1  # marquardt damping matrix (eye times damping coefficient)
     # jfunc = jacobian(fzKautograd_Rt)
     for i in range(max_iter):
-        x03 = x[0:3]
+        x03 = x[:3]
         x36 = x[3:6]
         a0 = pw @ rpy2dcm(x03)
         a1 = pw @ rpy2dcm(x03 + dx1)  # quat2dcm(
@@ -176,13 +176,13 @@ def fcnNLS_Rt(K, p, pw, x):
             break
     else:
         print("WARNING: fcnNLS_Rt() reaching max iterations!")
-    R = rpy2dcm(x[0:3]).astype(np.float32)
+    R = rpy2dcm(x[:3]).astype(np.float32)
     t = x[3:6].astype(np.float32)
     # print('%i steps, residual rms = %.5f' % (i, rms(z-zhat)))
     return R, t
 
 
-def fcnNLS_batch(K, P, pw, cw):  # solves for pxyz, cxyz[1:], crpy[1:]
+def fcnNLS_batch(K, P, pw, cw):    # solves for pxyz, cxyz[1:], crpy[1:]
     """Solves for camera and tiepoint positions and orientations given keypoints and initial estimates; iteratively
     minimizes reprojection errors.
     """
@@ -194,8 +194,8 @@ def fcnNLS_batch(K, P, pw, cw):  # solves for pxyz, cxyz[1:], crpy[1:]
     nz = nt * (nc + 1) * 2  # number of measurements
     K = K.astype(float)
 
-    z = P[0:2].ravel("F")
-    z = np.concatenate((z[0::2], z[1::2]))
+    z = P[:2].ravel("F")
+    z = np.concatenate((z[::2], z[1::2]))
     nanz = np.isnan(z)
     z[nanz] = 0
     crpy = np.zeros((nc, 3))
@@ -203,7 +203,7 @@ def fcnNLS_batch(K, P, pw, cw):  # solves for pxyz, cxyz[1:], crpy[1:]
     range_cal = norm(cw[1])
 
     def fzKautograd_batch(x, K, nc, nt):  # for autograd
-        pw = x[0 : nt * 3].reshape(nt, 3)
+        pw = x[:nt * 3].reshape(nt, 3)
         alist = [pw]  # = pw @ np.eye(3) + np.zeros((1,3)), camera 1 fixed
         for i in range(nc):
             ia = nt * 3 + i * 3  # pos start
@@ -242,14 +242,14 @@ def fcnNLS_batch(K, P, pw, cw):  # solves for pxyz, cxyz[1:], crpy[1:]
     print("fcnNLS_batch done in %g steps, %.3fs, f=%g" % (i, time.time() - tic, rms(z - zhat)))
 
     j = nt * 3
-    pw = x[0:j].reshape(nt, 3)  # tp pos
+    pw = x[:j].reshape(nt, 3)
     cw = x[j : j + nc * 3].reshape(nc, 3)  # cam pos
     cw = np.concatenate((np.zeros((1, 3)), cw), 0)
     ca = x[j + nc * 3 : j + nc * 3 * 2].reshape(nc, 3)  # cam rpy
     return cw, pw
 
 
-def fcnNLS_batch2(K, P, pw, cw):  # solves for pxyz, [el, az, c_ranges[1:]]
+def fcnNLS_batch2(K, P, pw, cw):    # solves for pxyz, [el, az, c_ranges[1:]]
     """Solves for camera and tiepoint positions by fitting to projections, returns camera positions and tiepoint
     positions.
     """
@@ -262,8 +262,8 @@ def fcnNLS_batch2(K, P, pw, cw):  # solves for pxyz, [el, az, c_ranges[1:]]
     K = K.astype(float)
     C = cam2ned()
 
-    z = P[0:2].ravel("F")
-    z = np.concatenate((z[0::2], z[1::2]))
+    z = P[:2].ravel("F")
+    z = np.concatenate((z[::2], z[1::2]))
     nanz = np.isnan(z)
     z[nanz] = 0
 
@@ -275,7 +275,7 @@ def fcnNLS_batch2(K, P, pw, cw):  # solves for pxyz, [el, az, c_ranges[1:]]
     def fzKautograd_batch(x, K, nc, nt):  # for autograd
         j = nt * 3
         R = rpy2dcm(x[j : j + 3])
-        pc = x[0:j].reshape(nt, 3) @ R  # tiepoints in camera frame
+        pc = x[:j].reshape(nt, 3) @ R
         sc = np.zeros((nc, 3))
         sc[:, 0] = x[j + 5 : j + 5 + nc]  # ranges
         sc[:, 1] = x[j + 3]  # el
@@ -320,7 +320,7 @@ def fcnNLS_batch2(K, P, pw, cw):  # solves for pxyz, [el, az, c_ranges[1:]]
     sc[:, 0] = x[j + 5 : j + 5 + nc]  # ranges
     sc[:, 1] = x[j + 3]  # el
     sc[:, 2] = x[j + 4]  # az
-    pw = x[0:j].reshape(nt, 3)  # tp pos
+    pw = x[:j].reshape(nt, 3)
     cw = sc2cc(sc) @ C  # cam pos
     cw = np.concatenate((np.zeros((1, 3)), cw), 0)
     ca = x[j : j + 3]  # cam rpy
