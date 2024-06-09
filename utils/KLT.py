@@ -21,11 +21,7 @@ def estimateAffine2D_SURF(im1, im2, p1, scale=1.0):
         x0, x1, y0, y1 = boundingRect(p1 * scale, im1.shape, border=(border, border))
         kp1, des1 = orb.detectAndCompute(im1[y0:y1, x0:x1], mask=None)
         matches = bf.knnMatch(des1, des2, k=2)
-        # matches = sorted(matches, key=lambda x: x.distance)
-        good = []
-        for m, n in matches:
-            if m.distance < 0.6 * n.distance:
-                good.append(m)
+        good = [m for m, n in matches if m.distance < 0.6 * n.distance]
         ngood = len(good)
         a += 10
 

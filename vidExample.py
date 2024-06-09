@@ -16,7 +16,7 @@ def vidExamplefcn():
     pathb = "./matlab/"
     if isVideo:
         # filename, startframe = patha + 'IMG_4119.MOV', 41  # 20km/h 2018.3.11
-        filename, startframe = patha + "IMG_4134.MOV", 19  # 40km/h 2018.3.11
+        filename, startframe = f"{patha}IMG_4134.MOV", 19
         # filename, startframe = patha + 'IMG_4238.MOV', 8  # 60km/h 2018.3.30 missing *.mat file
         readSpeed = 1  # read every # frames
         n = 20  # number of frames to read
@@ -24,9 +24,7 @@ def vidExamplefcn():
     else:
         frames = np.arange(4122, 4134)  # 40km/h
         n = len(frames)
-        imagename = []
-        for i in frames:
-            imagename.append(patha + "IMG_" + str(i) + ".JPG")
+        imagename = [f"{patha}IMG_{str(i)}.JPG" for i in frames]
         filename = imagename[0]
 
     cam, cap = getCameraParams(filename, platform="iPhone 6s")
@@ -48,7 +46,7 @@ def vidExamplefcn():
 
     # Iterate over images
     proc_dt = np.zeros([n, 1])
-    print("Starting image processing on %s ..." % filename)
+    print(f"Starting image processing on {filename} ...")
     print(
         ("\n" + "%13s" * 9)
         * 2
@@ -84,7 +82,7 @@ def vidExamplefcn():
                 df = frames[i] - frames[i - 1]
                 if df > 1:
                     # cap.set(1, frames[i])
-                    for j in range(df - 1):
+                    for _ in range(df - 1):
                         cap.read()  # skip frames
             B[i, 12] = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000  # access CAP_PROP *before* reading!
             B[i, 13] = cap.get(cv2.CAP_PROP_POS_FRAMES)
@@ -155,7 +153,7 @@ def vidExamplefcn():
         im0 = im
 
         msvFrame = 5
-        if True and i == msvFrame:
+        if i == msvFrame:
             # B[0:i, 3:6], p3[vg] = fcnNLS_batch(K, P[:,:,0:i], p3, B[0:i, 3:6])
             tmsv, p3hatmsv = fcnMSV1_t(K, P, B, vg, i)
             p3[vg] = p3hatmsv - t
@@ -178,45 +176,6 @@ def vidExamplefcn():
     dta = time.time() - cput0
     print("\nSpeed = %.2f +/- %.2f km/h\nRes = %.3f pixels" % (S[1:, 8].mean(), S[1:, 8].std(), S[1:, 3].mean()))
     print("Processed %g images: %s in %.2fs (%.2ffps)\n" % (n, frames[:], dta, n / dta))
-
-    # Post-track process
-    if False:
-        r = 0
-        for i in range(n):
-            # j = max(i, msvFrame)
-            vg = ~np.isnan(P[3, :, i])
-            p = P[0:2, vg, i].T
-            t, R, residuals, p_ = estimateWorldCameraPose(K, p, p3[vg], R=R, findR=False)
-            if i > 0:
-                dt = B[i, 12] - B[i - 1, 12]
-                dr = norm(t + B[0, 0:3] - B[i - 1, 0:3])
-            else:
-                dt = np.nan
-                dr = 0
-            r += dr
-            B[i, 3:6] = t
-            B[i, 0:3] = B[0, 0:3] + t
-            P[0:2, vg, i] = p.T  # xy
-            P[2:4, vg, i] = p_.T  # xy_proj
-            P[4, vg, i] = i
-            S[i, :] = (i, proc_dt[i], vg.sum(), residuals, dt, B[i, 12] - t0, dr, r, dr / dt * 3.6)
-            print("%13g%13.3f%13g%13.3f%13.3f%13.3f%13.2f%13.2f%13.1f" % tuple(S[i, :]))
-        print("\nSpeed = %.2f +/- %.2f km/h\nRes = %.3f pixels" % (S[1:, 8].mean(), S[1:, 8].std(), S[1:, 3].mean()))
-        print("Processed %g images: %s in %.2fs (%.2ffps)\n" % (n, frames[:], dta, n / dta))
-
-    # Batch NLS
-    # Batch2 may work better with tripod, currently camera is tilting a little
-    if False:
-        B[:, 3:6], _ = fcnNLS_batch(K, P, p3, B[:, 3:6])
-        S[1:, 6] = norm(B[1:, 3:6] - B[:-1, 3:6], axis=1)
-        S[:, 7] = np.cumsum(S[:, 6])
-        S[1:, 8] = S[1:, 6] / S[1:, 4] * 3.6
-        for i in range(0, n):
-            print("%13g%13.3f%13g%13.3f%13.3f%13.3f%13.2f%13.2f%13.1f" % tuple(S[i, :]))
-        print(
-            "\nSpeed = %.2f +/- %.2f km/h\nResiduals = %.3f pixels" % (S[1:, 8].mean(), S[1:, 8].std(), S[1:, 3].mean())
-        )
-        print("Processed %g images: %s in %.2fs (%.2ffps)\n" % (n, frames[:], dta, n / dta))
 
     plots.plotresults(cam, im // 2 + imfirst // 2, P, S, B, bbox=boxb)  # // is integer division
 

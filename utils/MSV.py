@@ -69,7 +69,7 @@ def fcnMSV2_t(K, P, B, vg, i):  # solves for 1 camera translation
     mdm = np.eye(6) * 1  # marquardt damping matrix (eye times damping coefficient)
     for i in range(max_iter):
         a = fcnNvintercept(np.vstack((u0[:-2], -x.reshape((2, 3)))), U)
-        a1 = a + x[0:3]
+        a1 = a + x[:3]
         a2 = a + x[3:6]
 
         zhat = fzK(np.vstack((a1, a2)), K).ravel()

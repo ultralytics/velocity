@@ -132,7 +132,7 @@ def fcnsigmarejection(x, srl=3.0, ni=3):
     v = np.empty_like(x, dtype=bool)
     v[:] = True
     x = x.ravel()
-    for m in range(ni):
+    for _ in range(ni):
         s = x.std() * srl
         mu = x.mean()
         vi = (x < mu + s) & (x > mu - s)
@@ -152,11 +152,7 @@ def worldPointsLicensePlate(country="EU"):  # Returns x, y coordinates of licens
 
     Usage: `worldPointsLicensePlate(country='Chile')`.
     """
-    if country == "Chile":
-        size = [0.3725, 0.1275, 0]  # [0.36 0.13] (m) license plate size (Chile)
-    else:  # EU
-        size = [0.520, 0.110, 0]  # 520 x 110 mm (EU)
-
+    size = [0.3725, 0.1275, 0] if country == "Chile" else [0.520, 0.110, 0]
     return np.array([[1, -1, 0], [1, 1, 0], [-1, 1, 0], [-1, -1, 0]], np.float32) * np.array(size, np.float32) / 2
 
 
