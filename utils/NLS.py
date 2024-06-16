@@ -202,7 +202,7 @@ def fcnNLS_batch(K, P, pw, cw):  # solves for pxyz, cxyz[1:], crpy[1:]
     z[nanz] = 0
     crpy = np.zeros((nc, 3))
     x = np.concatenate((pw, cw[1:], crpy)).ravel()  # [tp_pos, cam_pos, cam_rpy, K3]
-    range_cal = norm(cw[1])
+    norm(cw[1])
 
     def fzKautograd_batch(x, K, nc, nt):  # for autograd
         pw = x[: nt * 3].reshape(nt, 3)
@@ -247,7 +247,7 @@ def fcnNLS_batch(K, P, pw, cw):  # solves for pxyz, cxyz[1:], crpy[1:]
     pw = x[:j].reshape(nt, 3)
     cw = x[j : j + nc * 3].reshape(nc, 3)  # cam pos
     cw = np.concatenate((np.zeros((1, 3)), cw), 0)
-    ca = x[j + nc * 3 : j + nc * 3 * 2].reshape(nc, 3)  # cam rpy
+    x[j + nc * 3 : j + nc * 3 * 2].reshape(nc, 3)  # cam rpy
     return cw, pw
 
 
@@ -325,5 +325,5 @@ def fcnNLS_batch2(K, P, pw, cw):  # solves for pxyz, [el, az, c_ranges[1:]]
     pw = x[:j].reshape(nt, 3)
     cw = sc2cc(sc) @ C  # cam pos
     cw = np.concatenate((np.zeros((1, 3)), cw), 0)
-    ca = x[j : j + 3]  # cam rpy
+    x[j : j + 3]  # cam rpy
     return cw, pw
