@@ -57,7 +57,7 @@ The repository contains various methods for vehicle speed estimation. If you're 
 
 <!-- Sample results image -->
 
-<img src="https://github.com/ultralytics/velocity/blob/main/results.jpg"> 
+<img src="https://github.com/ultralytics/velocity/blob/main/results.jpg">
 
 # 📚 Citation
 

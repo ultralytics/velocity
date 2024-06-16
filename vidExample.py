@@ -151,7 +151,6 @@ def vidExamplefcn():
         P[0:2, vg, i] = p.T  # xy
         P[2:4, vp, i] = p_.T  # xy_proj
         P[4, vg, i] = i
-        im0 = im
 
         msvFrame = 5
         if i == msvFrame:
@@ -168,7 +167,7 @@ def vidExamplefcn():
         # imrgb = cv2.cvtColor(imbgr,cv2.COLOR_BGR2RGB)
         # plots.imshow(cv2.cvtColor(imrgb,cv2.COLOR_BGR2HSV_FULL)[:,:,0])
         im_gaussian = cv2.GaussianBlur(im, (3, 3), 0)
-        im_canny = cv2.Canny(im_gaussian, 100, 200)
+        cv2.Canny(im_gaussian, 100, 200)
         # plots.imshow(cv2.GaussianBlur(im_canny, (9, 9), 0))
 
     if isVideo:
