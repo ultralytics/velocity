@@ -1,3 +1,5 @@
+# Ultralytics YOLO 🚀, AGPL-3.0 License https://ultralytics.com/license
+
 from utils.common import *
 from utils.NLS import fzK
 
