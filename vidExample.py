@@ -1,7 +1,6 @@
 # Ultralytics YOLO 🚀, AGPL-3.0 License https://ultralytics.com/license
 
 import scipy
-from scipy import io
 
 import plots
 from utils.images import *
