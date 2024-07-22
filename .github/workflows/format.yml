@@ -5,8 +5,8 @@
 name: Ultralytics Actions
 
 on:
-  push:
-    branches: [main]
+  issues:
+    types: [opened, edited]
   pull_request:
     branches: [main]
 
