@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run Ultralytics Formatting
-        uses: ultralytics/actions@glenn-jocher-patch-2
+        uses: ultralytics/actions@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }} # automatically generated, do not modify
           labels: true # autolabel issues and PRs
