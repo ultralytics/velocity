@@ -55,8 +55,6 @@ To run the code in this repository, you will need the following:
 
 The repository contains various methods for vehicle speed estimation. If you're interested in leveraging these techniques or require more information on running the code, please feel free to reach out.
 
-<!-- Sample results image -->
-
 <img src="https://github.com/ultralytics/velocity/blob/main/results.jpg">
 
 # 📚 Citation
