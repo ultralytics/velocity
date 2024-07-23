@@ -55,8 +55,6 @@ To run the code in this repository, you will need the following:
 
 The repository contains various methods for vehicle speed estimation. If you're interested in leveraging these techniques or require more information on running the code, please feel free to reach out.
 
-<!-- Sample results image -->
-
 <img src="https://github.com/ultralytics/velocity/blob/main/results.jpg">
 
 # 📚 Citation
@@ -68,8 +66,6 @@ If our work assists you in your research or project, please consider citing it u
 # 🤝 Contribute
 
 We welcome contributions from the community! Whether you're fixing bugs, adding new features, or improving documentation, your input is invaluable. Take a look at our [Contributing Guide](https://docs.ultralytics.com/help/contributing) to get started. Also, we'd love to hear about your experience with Ultralytics products. Please consider filling out our [Survey](https://ultralytics.com/survey?utm_source=github&utm_medium=social&utm_campaign=Survey). A huge 🙏 and thank you to all of our contributors!
-
-<!-- Ultralytics contributors -->
 
 <a href="https://github.com/ultralytics/yolov5/graphs/contributors">
 <img width="100%" src="https://github.com/ultralytics/assets/raw/main/im/image-contributors.png" alt="Ultralytics open-source contributors"></a>
