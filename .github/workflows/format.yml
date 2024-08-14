@@ -24,6 +24,6 @@ jobs:
           prettier: true # format YAML, JSON, Markdown and CSS
           spelling: true # check spelling
           links: false # check broken links
-          summary: true # print PR summary with GPT4o (requires 'openai_api_key')
+          summary: false # print PR summary with GPT4o (requires 'openai_api_key')
           openai_azure_api_key: ${{ secrets.OPENAI_AZURE_API_KEY }}
           openai_azure_endpoint: ${{ secrets.OPENAI_AZURE_ENDPOINT }}
