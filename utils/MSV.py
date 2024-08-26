@@ -9,7 +9,6 @@ def fcnMSV1_t(K, P, B, vg, ii):  # solves for 1 camera translation
     """Solves for 1 camera translation by optimizing translation vectors given camera matrix K, pixel coordinates P,
     baseline B, valid mask vg, and image index ii.
     """
-
     # vg = np.isnan(P[0, :, i])==False
     nf = ii + 1
     ng = vg.sum()
@@ -52,7 +51,6 @@ def fcnMSV1_t(K, P, B, vg, ii):  # solves for 1 camera translation
 
 def fcnMSV2_t(K, P, B, vg, i):  # solves for 1 camera translation
     """Solves for 1 camera translation via iterative minimization, returns optimized camera parameters as np.float32."""
-
     # vg = np.isnan(P[0, :, i])==False
     nf = i + 1
     ng = vg.sum()
@@ -101,7 +99,6 @@ def fcn2vintercept(A, U):
     """Calculates 3D intercepts of vectors (U) from origins (A) for camera frame combinations, returning nx3 tie point
     centers.
     """
-
     # A = nx3 camera origins, ux1 = nxnp x unit vectors
     _, nf, nv = U.shape  # 3, nframes, npoints
     C0 = np.zeros([nv, 3])
