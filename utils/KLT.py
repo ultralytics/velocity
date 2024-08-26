@@ -1,7 +1,6 @@
 # Ultralytics YOLO 🚀, AGPL-3.0 License https://ultralytics.com/license
 
 import cv2
-
 from utils.common import *
 from utils.images import boundingRect
 
@@ -101,7 +100,6 @@ def KLTmain(im, im0, im0_small, p0):
     """Runs the Kanade-Lucas-Tomasi (KLT) feature tracking algorithm with coarse-to-fine tracking and affine
     transformation.
     """
-
     # Parameters for KLT
     EPS = cv2.TERM_CRITERIA_EPS
     COUNT = cv2.TERM_CRITERIA_COUNT
