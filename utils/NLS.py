@@ -12,7 +12,6 @@ def estimateWorldCameraPose(K, p, p3, t=np.array([0, 0, 1]), R=np.eye(3), findR=
 
     Args: K (array): camera matrix, p (2D array): image points, p3 (3D array): world points, t (array, optional): initial translation, R (array, optional): initial rotation, findR (bool, optional): if True estimates rotation. Returns: tuple (translation, rotation, residuals, projected points).
     """
-
     # Linear solution
     # Re, te = extrinsicsPlanar(p, p3, K)
 
@@ -132,7 +131,6 @@ def fcnNLS_t(K, p, pw, x):
 # @profile
 def fcnNLS_Rt(K, p, pw, x):
     """Estimates camera rotation (R) and translation (t) from world to image points using Non-Linear Least Squares."""
-
     # K = 3x3 intrinsic matrix
     # p = nx2 image points
     # pw = nx3 world points = pc @ cam2ned().T
