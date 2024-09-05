@@ -85,7 +85,7 @@ def plotresults(cam, im, P, S, B, bbox):
         plot_height=300,
         x_axis_label="image",
         y_axis_label="distance (m)",
-        title="Distance = %.2fm in %.3fs" % (S[-1, 7], S[-1, 5] - S[0, 5]),
+        title=f"Distance = {S[-1, 7]:.2f}m in {S[-1, 5] - S[0, 5]:.3f}s",
         tools="save,reset,hover",
         active_inspect="hover",
     )
@@ -98,7 +98,7 @@ def plotresults(cam, im, P, S, B, bbox):
         plot_height=300,
         x_axis_label="image",
         y_axis_label="speed (km/h)",
-        title="Speed = %.2f +/- %.2f km/h" % (S[1:, 8].mean(), S[1:, 8].std()),
+        title=f"Speed = {S[1:, 8].mean():.2f} +/- {S[1:, 8].std():.2f} km/h",
         tools="save,reset,hover",
         active_inspect="hover",
     )
