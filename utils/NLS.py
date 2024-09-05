@@ -234,12 +234,12 @@ def fcnNLS_batch(K, P, pw, cw):  # solves for pxyz, cxyz[1:], crpy[1:]
         delta = np.linalg.inv(JT @ JT.T + mdm) @ JT @ (z - zhat) * 0.9
         x = x + delta
         # x[nt * 3:nt * 3 + nc * 3] *= range_cal / norm(x[nt * 3:nt * 3 + 3])  # calibrate scale
-        print("%g: %.3fs, f=%g, x=%s" % (i, time.time() - tic, rms(z - zhat), rms(delta)))
+        print(f"{i:g}: {time.time() - tic:.3f}s, f={rms(z - zhat):g}, x={rms(delta)}")
         if rms(delta) < 1e-7:
             break
     else:
         print("WARNING: fcnNLS_batch() reaching max iterations!")
-    print("fcnNLS_batch done in %g steps, %.3fs, f=%g" % (i, time.time() - tic, rms(z - zhat)))
+    print(f"fcnNLS_batch done in {i:g} steps, {time.time() - tic:.3f}s, f={rms(z - zhat):g}")
 
     j = nt * 3
     pw = x[:j].reshape(nt, 3)
@@ -313,7 +313,7 @@ def fcnNLS_batch2(K, P, pw, cw):  # solves for pxyz, [el, az, c_ranges[1:]]
             break
     else:
         print("WARNING: fcnNLS_batch() reaching max iterations!")
-    print("fcnNLS_batch2 done in %g steps, %.3fs, f=%g" % (i, time.time() - tic, rms(z - zhat)))
+    print(f"fcnNLS_batch2 done in {i:g} steps, {time.time() - tic:.3f}s, f={rms(z - zhat):g}")
 
     j = nt * 3
     sc = np.zeros((nc, 3))
