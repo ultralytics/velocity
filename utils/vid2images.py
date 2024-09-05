@@ -18,7 +18,7 @@ for i in range(0, 2000, 10):
     cap.set(1, i)
     success, im = cap.read()  # read frame
     if success:
-        print("image %g/%g ..." % (cap.get(cv2.CAP_PROP_POS_FRAMES), cap.get(cv2.CAP_PROP_FRAME_COUNT)))
+        print(f"image {cap.get(cv2.CAP_PROP_POS_FRAMES):g}/{cap.get(cv2.CAP_PROP_FRAME_COUNT):g} ...")
         cv2.imwrite(newdir + str(i) + ".jpg", im)
     else:
         cap.release()

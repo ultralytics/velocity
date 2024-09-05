@@ -84,7 +84,7 @@ def fcnMSV2_t(K, P, B, vg, i):  # solves for 1 camera translation
         JT = (JT - zhat) / dx
         JTJ = JT @ JT.T  # J.T @ J
         delta = np.linalg.inv(JTJ + mdm) @ JT @ residual * min(((i + 1) * 0.01) ** 2, 1)
-        print("%g: f=%g, x=%s" % (i, rms(z - zhat), rms(delta)))
+        print(f"{i:g}: f={rms(z - zhat):g}, x={rms(delta)}")
         x = x + delta
         if rms(delta) < 1e-8:
             break
@@ -276,7 +276,7 @@ def fcnMSV1direct_t(K, P, B, vg, i):  # solves for 1 camera translation
         v_cap = v / (1 - (beta_2**i))  # calculates the bias-corrected estimates
         delta = (alpha * m_cap) / (v_cap**0.5 + epsilon)
         x = x - delta  # updates the parameters
-        print("Residual %g,    Params: %s" % (r[i], x[:]))
+        print(f"Residual {r[i]:g},    Params: {x[:]}")
         xi[i] = x
         if rms(delta) < 1e-5:  # convergence check
             break
