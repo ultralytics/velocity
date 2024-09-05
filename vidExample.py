@@ -162,7 +162,7 @@ def vidExamplefcn():
         # Print image[i] results
         proc_dt[i] = time.time() - tic
         S[i, :] = (i, proc_dt[i], vg.sum(), residuals, dt, B[i, 12] - t0, dr, r, dr / dt * 3.6)
-        print("%13g%13.3f%13g%13.3f%13.3f%13.3f%13.2f%13.2f%13.1f" % tuple(S[i, :]))
+        print("{:13g}{:13.3f}{:13g}{:13.3f}{:13.3f}{:13.3f}{:13.2f}{:13.2f}{:13.1f}".format(*tuple(S[i, :])))
 
         # imrgb = cv2.cvtColor(imbgr,cv2.COLOR_BGR2RGB)
         # plots.imshow(cv2.cvtColor(imrgb,cv2.COLOR_BGR2HSV_FULL)[:,:,0])
@@ -174,8 +174,8 @@ def vidExamplefcn():
         cap.release()  # Release the video capture object
 
     dta = time.time() - cput0
-    print("\nSpeed = %.2f +/- %.2f km/h\nRes = %.3f pixels" % (S[1:, 8].mean(), S[1:, 8].std(), S[1:, 3].mean()))
-    print("Processed %g images: %s in %.2fs (%.2ffps)\n" % (n, frames[:], dta, n / dta))
+    print(f"\nSpeed = {S[1:, 8].mean():.2f} +/- {S[1:, 8].std():.2f} km/h\nRes = {S[1:, 3].mean():.3f} pixels")
+    print(f"Processed {n:g} images: {frames[:]} in {dta:.2f}s ({n / dta:.2f}fps)\n")
 
     plots.plotresults(cam, im // 2 + imfirst // 2, P, S, B, bbox=boxb)  # // is integer division
 
