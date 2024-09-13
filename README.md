@@ -5,8 +5,6 @@
 
 Welcome to the [Ultralytics Velocity](https://github.com/ultralytics/velocity) repository! Here, we're exploring the frontiers of Machine Learning (ML) and Structure From Motion (SFM) to estimate the speed of vehicles using imagery analysis. Our goal is to advance vehicle speed estimation techniques and provide a springboard for further research and application in this area.
 
-
-
 [![Ultralytics Actions](https://github.com/ultralytics/velocity/actions/workflows/format.yml/badge.svg)](https://github.com/ultralytics/velocity/actions/workflows/format.yml) <a href="https://ultralytics.com/discord"><img alt="Discord" src="https://img.shields.io/discord/1089800235347353640?logo=discord&logoColor=white&label=Discord&color=blue"></a> <a href="https://community.ultralytics.com"><img alt="Ultralytics Forums" src="https://img.shields.io/discourse/users?server=https%3A%2F%2Fcommunity.ultralytics.com&logo=discourse&label=Forums&color=blue"></a> <a href="https://reddit.com/r/ultralytics"><img alt="Ultralytics Reddit" src="https://img.shields.io/reddit/subreddit-subscribers/ultralytics?style=flat&logo=reddit&logoColor=white&label=Reddit&color=blue"></a>
 
 ## 🎯 Project Objectives
