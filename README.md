@@ -15,11 +15,6 @@ This project aims to utilize advanced ML and SFM approaches to accurately estima
 
 Currently, we do not provide a public dataset alongside this repository; the methods are tailored for use with custom datasets. If you have specific imagery or are interested in applying these techniques, please reach out for collaboration.
 
-
-
-
-
-
 - **MATLAB 2018a or newer**: Besides Python, some scripts require MATLAB. Clone the common functions repository and add it to your MATLAB path with the following commands:
 
   ```
