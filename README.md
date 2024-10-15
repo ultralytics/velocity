@@ -15,24 +15,10 @@ This project aims to utilize advanced ML and SFM approaches to accurately estima
 
 Currently, we do not provide a public dataset alongside this repository; the methods are tailored for use with custom datasets. If you have specific imagery or are interested in applying these techniques, please reach out for collaboration.
 
-# 📋 Requirements
 
-To run the code in this repository, you will need the following:
 
-- **Python 3.7+**: Install Python and use pip to set up the necessary libraries:
 
-  ```
-  pip3 install -U -r requirements.txt
-  ```
 
-  The `requirements.txt` file includes key Python packages such as:
-
-  - `numpy`
-  - `scipy`
-  - `torch` (PyTorch)
-  - `opencv-python` (OpenCV)
-  - `exifread`
-  - `bokeh` (optional, for visualization)
 
 - **MATLAB 2018a or newer**: Besides Python, some scripts require MATLAB. Clone the common functions repository and add it to your MATLAB path with the following commands:
 
