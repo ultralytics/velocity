@@ -17,10 +17,16 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
+      - name: Run Ultralytics CLA Check
+        uses: ultralytics/actions/cla@main
+        with:
+          token: ${{ secrets._GITHUB_TOKEN }}
+          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+
       - name: Run Ultralytics Formatting
         uses: ultralytics/actions@main
         with:
-          token: ${{ secrets._GITHUB_TOKEN }} # note GITHUB_TOKEN automatically generated
+          token: ${{ secrets._GITHUB_TOKEN }}
           labels: true # autolabel issues and PRs
           python: true # format Python code and docstrings
           prettier: true # format YAML, JSON, Markdown and CSS
