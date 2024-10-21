@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run Ultralytics CLA Check
-        uses: ultralytics/actions/cla@main
+        uses: ultralytics/actions/cla@cla-branch
         with:
           token: ${{ secrets._GITHUB_TOKEN }}
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
