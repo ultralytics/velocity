@@ -31,9 +31,16 @@ jobs:
 
   CLA:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
       - name: Run Ultralytics CLA Check
         uses: ultralytics/actions/cla@cla-branch
         with:
-          token: ${{ secrets._GITHUB_TOKEN }}
-          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+          github-token: ${{ secrets._GITHUB_TOKEN }}
+          cla_repository: 'ultralytics/cla'
+          cla_branch: 'main'
+          cla_signatures_path: 'signatures/version1/cla.json'
+          cla_document_url: 'https://docs.ultralytics.com/help/CLA'
+          allowlist: 'dependabot[bot],github-actions,bot*'
+          sign_comment: 'I have read the CLA Document and I sign the CLA'
+          allsigned_comment: 'All Contributors have signed the CLA. ✅'
