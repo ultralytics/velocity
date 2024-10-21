@@ -14,15 +14,9 @@ on:
     types: [opened, closed, synchronize, review_requested]
 
 jobs:
-  format:
+  Format:
     runs-on: ubuntu-latest
     steps:
-      - name: Run Ultralytics CLA Check
-        uses: ultralytics/actions/cla@cla-branch
-        with:
-          token: ${{ secrets._GITHUB_TOKEN }}
-          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
-
       - name: Run Ultralytics Formatting
         uses: ultralytics/actions@main
         with:
@@ -33,4 +27,13 @@ jobs:
           spelling: true # check spelling
           links: false # check broken links
           summary: true # print PR summary with GPT4o (requires 'openai_api_key')
+          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+
+  CLA:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Ultralytics CLA Check
+        uses: ultralytics/actions/cla@cla-branch
+        with:
+          token: ${{ secrets._GITHUB_TOKEN }}
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
