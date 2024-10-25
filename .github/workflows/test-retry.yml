@@ -1,0 +1,97 @@
+name: Test Retry Action
+
+on:
+  workflow_dispatch:
+    inputs:
+      should_fail:
+        description: 'Force failure to test retry'
+        type: boolean
+        default: false
+      timeout_test:
+        description: 'Test timeout handling'
+        type: boolean
+        default: false
+
+jobs:
+  test-retry:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test successful command
+        uses: ultralytics/actions/retry@glenn-jocher-patch-1
+        with:
+          run: |
+            echo "This should succeed on first try"
+            date
+            echo "Current directory: $PWD"
+            
+      - name: Test with environment variables
+        uses: ultralytics/actions/retry@glenn-jocher-patch-1
+        env:
+          TEST_VAR: "Hello from env"
+        with:
+          run: |
+            echo "Testing env vars: $TEST_VAR"
+            echo "GitHub workspace: $GITHUB_WORKSPACE"
+            
+      - name: Test with working directory
+        uses: ultralytics/actions/retry@glenn-jocher-patch-1
+        with:
+          working-directory: /tmp
+          run: |
+            echo "Working from $(pwd)"
+            touch test.txt
+            ls -la
+
+      - name: Test command that might fail
+        uses: ultralytics/actions/retry@glenn-jocher-patch-1
+        if: ${{ inputs.should_fail }}
+        with:
+          max_attempts: 3
+          retry_delay: 5
+          run: |
+            echo "Attempt to run potentially failing command..."
+            exit 1
+
+      - name: Test timeout handling
+        uses: ultralytics/actions/retry@glenn-jocher-patch-1
+        if: ${{ inputs.timeout_test }}
+        with:
+          timeout_minutes: 1
+          max_attempts: 2
+          retry_delay: 30
+          run: |
+            echo "Starting long running process..."
+            sleep 120
+            echo "This should timeout before reaching here"
+
+      - name: Test multi-line complex command
+        uses: ultralytics/actions/retry@glenn-jocher-patch-1
+        with:
+          max_attempts: 2
+          run: |
+            # Create a test Python script
+            cat << 'EOF' > test.py
+            import random
+            import time
+            
+            print("Running complex test...")
+            time.sleep(2)
+            
+            # Simulate occasional failures
+            if random.random() < 0.5:
+                raise Exception("Random failure!")
+                
+            print("Success!")
+            EOF
+            
+            # Run the script
+            python test.py
+
+      - name: Test with Docker
+        uses: ultralytics/actions/retry@glenn-jocher-patch-1
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_delay: 10
+          run: |
+            docker run --rm alpine sh -c 'echo "Hello from Docker!"'
