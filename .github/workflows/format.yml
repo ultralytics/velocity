@@ -17,6 +17,8 @@ jobs:
   Format:
     runs-on: ubuntu-latest
     steps:
+      - name: Clean up disk space
+        uses: ultralytics/actions/disk-space-cleanup@glenn-jocher-patch-1
       - name: Run Ultralytics Formatting
         uses: ultralytics/actions@cla-branch
         with:
