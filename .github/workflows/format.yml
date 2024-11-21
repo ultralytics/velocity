@@ -37,10 +37,10 @@ jobs:
         uses: ultralytics/actions/cla@cla-branch
         with:
           github-token: ${{ secrets._GITHUB_TOKEN }}
-          cla_repository: 'ultralytics/cla'
-          cla_branch: 'main'
-          cla_signatures_path: 'signatures/version1/cla.json'
-          cla_document_url: 'https://docs.ultralytics.com/help/CLA'
-          allowlist: 'dependabot[bot],github-actions,bot*'
-          sign_comment: 'I have read the CLA Document and I sign the CLA'
-          allsigned_comment: 'All Contributors have signed the CLA. ✅'
+          cla_repository: "ultralytics/cla"
+          cla_branch: "main"
+          cla_signatures_path: "signatures/version1/cla.json"
+          cla_document_url: "https://docs.ultralytics.com/help/CLA"
+          allowlist: "dependabot[bot],github-actions,bot*"
+          sign_comment: "I have read the CLA Document and I sign the CLA"
+          allsigned_comment: "All Contributors have signed the CLA. ✅"
