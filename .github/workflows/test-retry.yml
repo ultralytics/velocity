@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       should_fail:
-        description: 'Force failure to test retry'
+        description: "Force failure to test retry"
         type: boolean
         default: false
       timeout_test:
-        description: 'Test timeout handling'
+        description: "Test timeout handling"
         type: boolean
         default: false
 
@@ -23,7 +23,7 @@ jobs:
             echo "This should succeed on first try"
             date
             echo "Current directory: $PWD"
-            
+
       - name: Test with environment variables
         uses: ultralytics/actions/retry@glenn-jocher-patch-1
         env:
@@ -32,7 +32,7 @@ jobs:
           run: |
             echo "Testing env vars: $TEST_VAR"
             echo "GitHub workspace: $GITHUB_WORKSPACE"
-            
+
       - name: Test with working directory
         uses: ultralytics/actions/retry@glenn-jocher-patch-1
         with:
@@ -73,17 +73,17 @@ jobs:
             cat << 'EOF' > test.py
             import random
             import time
-            
+
             print("Running complex test...")
             time.sleep(2)
-            
+
             # Simulate occasional failures
             if random.random() < 0.5:
                 raise Exception("Random failure!")
                 
             print("Success!")
             EOF
-            
+
             # Run the script
             python test.py
 
