@@ -1,9 +1,8 @@
-# Ultralytics YOLO 🚀, AGPL-3.0 License https://ultralytics.com/license
+# Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 
 import os
 
 import cv2
-
 import utils.common
 
 PATH = "/Users/glennjocher/Downloads/DATA/VSM/chessboard/IMG_4414.MOV"
