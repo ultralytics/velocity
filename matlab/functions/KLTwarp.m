@@ -1,3 +1,5 @@
+% Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+
 function [p, v] = KLTwarp(KLT,Ixy,I,Im1,pm1,vm1,mode)
 %KLTwarp Steps vision.PointTracker KLT tracks 
 % This function uses the 2-stage KLT warp tracking method to propagate 

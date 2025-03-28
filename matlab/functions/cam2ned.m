@@ -1,3 +1,5 @@
+% Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+
 function R = cam2ned()
 %x_ned = R*x_cam;
 

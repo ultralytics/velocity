@@ -1,3 +1,5 @@
+% Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+
 function [tform, inliers] = fitgeotransSigmaRejection(xin,xout,srl)
 %xin = [nx2] pixels in source image
 %xout = [nx2] pixels in output image

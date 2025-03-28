@@ -1,3 +1,5 @@
+% Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+
 function J = fcnimwarp(I,Ixy,tform)
 %px = Ixy*tform(:,1);  py = Ixy*tform(:,2);  %faster than p=Ixy*tform;
 
