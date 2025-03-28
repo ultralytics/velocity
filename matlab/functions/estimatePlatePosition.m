@@ -1,3 +1,5 @@
+% Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+
 function [t, R, inliers, residuals, imagePointsProjected] = estimatePlatePosition(cameraParams,imagePoints,worldPoints,I)
 n = size(imagePoints,1);
 imagePoints=double(imagePoints);

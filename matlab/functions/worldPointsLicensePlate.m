@@ -1,3 +1,5 @@
+% Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+
 function worldPoints=worldPointsLicensePlate()
 %Returns x, y coordinates of license plate outline in meters
 %https://en.wikipedia.org/wiki/Vehicle_registration_plate

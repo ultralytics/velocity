@@ -1,84 +1,83 @@
-<a href="https://www.ultralytics.com/" target="_blank"><img src="https://raw.githubusercontent.com/ultralytics/assets/main/logo/Ultralytics_Logotype_Original.svg" width="320" alt="Ultralytics logo"></a>
+<a href="https://www.ultralytics.com/"><img src="https://raw.githubusercontent.com/ultralytics/assets/main/logo/Ultralytics_Logotype_Original.svg" width="320" alt="Ultralytics logo"></a>
 
 # 🚗 Introduction
 
-Welcome to the [Ultralytics Velocity](https://github.com/ultralytics/velocity) repository! Here, we're exploring the frontiers of Machine Learning (ML) and Structure From Motion (SFM) to estimate the speed of vehicles using imagery analysis. Our goal is to advance vehicle speed estimation techniques and provide a springboard for further research and application in this area.
+Welcome to the [Ultralytics Velocity](https://github.com/ultralytics/velocity) repository! Here, we delve into the intersection of [Machine Learning (ML)](https://www.ultralytics.com/glossary/machine-learning-ml) and [Structure From Motion (SFM)](https://en.wikipedia.org/wiki/Structure_from_motion) to estimate the speed of vehicles using image analysis. Our objective is to enhance vehicle speed estimation methodologies and provide a foundation for future research and practical applications in fields like [traffic management](https://www.ultralytics.com/blog/ai-in-traffic-management-from-congestion-to-coordination) and [autonomous systems](https://www.ultralytics.com/glossary/autonomous-vehicles).
 
 [![Ultralytics Actions](https://github.com/ultralytics/velocity/actions/workflows/format.yml/badge.svg)](https://github.com/ultralytics/velocity/actions/workflows/format.yml) <a href="https://discord.com/invite/ultralytics"><img alt="Discord" src="https://img.shields.io/discord/1089800235347353640?logo=discord&logoColor=white&label=Discord&color=blue"></a> <a href="https://community.ultralytics.com/"><img alt="Ultralytics Forums" src="https://img.shields.io/discourse/users?server=https%3A%2F%2Fcommunity.ultralytics.com&logo=discourse&label=Forums&color=blue"></a> <a href="https://reddit.com/r/ultralytics"><img alt="Ultralytics Reddit" src="https://img.shields.io/reddit/subreddit-subscribers/ultralytics?style=flat&logo=reddit&logoColor=white&label=Reddit&color=blue"></a>
 
 ## 🎯 Project Objectives
 
-This project aims to utilize advanced ML and SFM approaches to accurately estimate vehicle speeds from various forms of imagery. By doing so, we hope to contribute valuable tools and methods that can be applied in domains such as traffic monitoring, autonomous driving systems, and road safety enhancements.
+This project aims to leverage advanced [ML](https://www.ultralytics.com/glossary/machine-learning-ml) and SFM techniques to accurately estimate vehicle speeds from various forms of imagery. By developing these methods, we hope to contribute valuable tools applicable to traffic monitoring, [autonomous driving systems](https://www.ultralytics.com/solutions/ai-in-automotive), and road safety analysis.
 
 ## 📸 Dataset
 
-Currently, we do not provide a public dataset alongside this repository; the methods are tailored for use with custom datasets. If you have specific imagery or are interested in applying these techniques, please reach out for collaboration.
+Currently, a public [dataset](https://www.ultralytics.com/glossary/benchmark-dataset) is not provided with this repository. The methods are designed for integration with custom datasets. If you possess relevant imagery or wish to collaborate on applying these techniques, please contact us. For general dataset needs, explore resources like [Roboflow](https://roboflow.com/?ref=ultralytics) or public datasets like [COCO](https://docs.ultralytics.com/datasets/detect/coco/).
 
 # 📋 Requirements
 
-To run the code in this repository, you will need the following:
+To execute the code within this repository, ensure you meet the following prerequisites:
 
-- **Python 3.7+**: Install Python and use pip to set up the necessary libraries:
+- **Python 3.7+**: Install [Python](https://www.python.org/) and use [pip](https://pip.pypa.io/en/stable/) to set up the necessary libraries:
 
-  ```
+  ```bash
   pip3 install -U -r requirements.txt
   ```
 
-  The `requirements.txt` file includes key Python packages such as:
+  The `requirements.txt` file includes essential Python packages such as:
 
-  - `numpy`
-  - `scipy`
-  - `torch` (PyTorch)
-  - `opencv-python` (OpenCV)
-  - `exifread`
-  - `bokeh` (optional, for visualization)
+  - [`numpy`](https://numpy.org/): Fundamental package for numerical computation.
+  - [`scipy`](https://scipy.org/): Library for scientific and technical computing.
+  - [`torch`](https://pytorch.org/): An open-source [deep learning](https://www.ultralytics.com/glossary/deep-learning-dl) framework ([PyTorch](https://www.ultralytics.com/glossary/pytorch)).
+  - [`opencv-python`](https://pypi.org/project/opencv-python/): [OpenCV](https://opencv.org/) library for [computer vision](https://www.ultralytics.com/glossary/computer-vision-cv) tasks.
+  - [`exifread`](https://github.com/ianare/exif-py): Library to read Exif metadata from image files.
+  - [`bokeh`](https://bokeh.org/) (optional): For interactive data visualization.
 
-- **MATLAB 2018a or newer**: Besides Python, some scripts require MATLAB. Clone the common functions repository and add it to your MATLAB path with the following commands:
+- **MATLAB 2018a or newer**: Some scripts require [MATLAB](https://www.mathworks.com/products/matlab.html). Clone the common functions repository and add it to your MATLAB path:
 
-  ```
+  ```bash
   git clone https://github.com/ultralytics/functions-matlab
   ```
 
-  Then in MATLAB:
+  Then, within MATLAB:
 
-  ```
-  >> addpath(genpath('/functions-matlab'))
+  ```matlab
+  >> addpath(genpath('/path/to/functions-matlab')) % Replace /path/to/ with the actual path
   ```
 
-  Ensure you have the following MATLAB toolboxes installed:
+  Ensure the following MATLAB toolboxes are installed:
 
   - `Statistics and Machine Learning Toolbox`
   - `Signal Processing Toolbox`
 
 # 🏃 Run
 
-The repository contains various methods for vehicle speed estimation. If you're interested in leveraging these techniques or require more information on running the code, please feel free to reach out.
+This repository offers various methods for vehicle speed estimation using SFM and ML. While detailed run instructions are context-dependent, the core scripts leverage the libraries listed in the requirements. If you're interested in applying these techniques or need specific guidance on execution, please don't hesitate to reach out or raise an [Issue](https://github.com/ultralytics/velocity/issues).
 
-<img src="https://github.com/ultralytics/velocity/blob/main/results.jpg">
+<img src="https://github.com/ultralytics/velocity/blob/main/results.jpg" alt="Sample speed estimation results visualization">
 
 # 📚 Citation
 
-If our work assists you in your research or project, please consider citing it using the following DOI:
+If this repository contributes to your research or project, please cite it using the following DOI:
 
 [![DOI](https://zenodo.org/badge/126519968.svg)](https://zenodo.org/badge/latestdoi/126519968)
 
 # 🤝 Contribute
 
-We welcome contributions from the community! Whether you're fixing bugs, adding new features, or improving documentation, your input is invaluable. Take a look at our [Contributing Guide](https://docs.ultralytics.com/help/contributing/) to get started. Also, we'd love to hear about your experience with Ultralytics products. Please consider filling out our [Survey](https://www.ultralytics.com/survey?utm_source=github&utm_medium=social&utm_campaign=Survey). A huge 🙏 and thank you to all of our contributors!
+We actively welcome contributions from the community! Whether it's fixing bugs, proposing new features, or enhancing documentation, your input is highly valued. Please see our [Contributing Guide](https://docs.ultralytics.com/help/contributing/) for more details on how to get started. We also encourage you to share your experiences with Ultralytics projects by completing our brief [Survey](https://www.ultralytics.com/survey?utm_source=github&utm_medium=social&utm_campaign=Survey). A huge 🙏 thank you to all our contributors!
 
-<a href="https://github.com/ultralytics/yolov5/graphs/contributors">
-<img width="100%" src="https://github.com/ultralytics/assets/raw/main/im/image-contributors.png" alt="Ultralytics open-source contributors"></a>
+[![Ultralytics open-source contributors](https://raw.githubusercontent.com/ultralytics/assets/main/im/image-contributors.png)](https://github.com/ultralytics/ultralytics/graphs/contributors)
 
 # ©️ License
 
-Ultralytics is excited to offer two different licensing options to meet your needs:
+Ultralytics provides two licensing options to accommodate different use cases:
 
-- **AGPL-3.0 License**: Perfect for students and hobbyists, this [OSI-approved](https://opensource.org/license) open-source license encourages collaborative learning and knowledge sharing. Please refer to the [LICENSE](https://github.com/ultralytics/ultralytics/blob/main/LICENSE) file for detailed terms.
-- **Enterprise License**: Ideal for commercial use, this license allows for the integration of Ultralytics software and AI models into commercial products without the open-source requirements of AGPL-3.0. For use cases that involve commercial applications, please contact us via [Ultralytics Licensing](https://www.ultralytics.com/license).
+- **AGPL-3.0 License**: This [OSI-approved](https://opensource.org/license/agpl-v3) open-source license is ideal for students, researchers, and enthusiasts keen on open collaboration and knowledge sharing. It promotes transparency and community involvement. See the [LICENSE](https://github.com/ultralytics/velocity/blob/main/LICENSE) file for full details.
+- **Enterprise License**: Designed for commercial applications, this license permits the seamless integration of Ultralytics software and AI models into commercial products and services, bypassing the open-source requirements of AGPL-3.0. If your project requires commercial licensing, please contact us through [Ultralytics Licensing](https://www.ultralytics.com/license).
 
 # 📬 Contact Us
 
-For bug reports, feature requests, and contributions, head to [GitHub Issues](https://github.com/ultralytics/velocity/issues). For questions and discussions about this project and other Ultralytics endeavors, join us on [Discord](https://discord.com/invite/ultralytics)!
+For bug reports, feature suggestions, and contributions, please visit [GitHub Issues](https://github.com/ultralytics/velocity/issues). For broader questions and discussions about this project or other Ultralytics initiatives, join our vibrant community on [Discord](https://discord.com/invite/ultralytics)!
 
 <br>
 <div align="center">

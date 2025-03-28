@@ -1,3 +1,5 @@
+% Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
+
 function []=extractStills()
 [fname, pname] = uigetfile({'*.mov','MOV Files (*.mov)'},'Select images','MultiSelect','off');
 saverFolder=[fname(1:end-4) ' Stills' filesep];
