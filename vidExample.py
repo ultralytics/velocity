@@ -1,7 +1,8 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 
-import plots
 import scipy
+
+import plots
 from utils.images import *
 from utils.KLT import *
 from utils.MSV import *
