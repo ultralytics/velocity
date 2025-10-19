@@ -1,8 +1,7 @@
 # pip3 install -U -r requirements.txt
 numpy
 scipy
-torch
-opencv-python
+cv2
 exifread
 bokeh
 
