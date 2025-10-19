@@ -25,7 +25,6 @@ To execute the code within this repository, ensure you meet the following prereq
   ```
 
   The `requirements.txt` file includes essential Python packages such as:
-
   - [`numpy`](https://numpy.org/): Fundamental package for numerical computation.
   - [`scipy`](https://scipy.org/): Library for scientific and technical computing.
   - [`torch`](https://pytorch.org/): An open-source [deep learning](https://www.ultralytics.com/glossary/deep-learning-dl) framework ([PyTorch](https://www.ultralytics.com/glossary/pytorch)).
@@ -46,7 +45,6 @@ To execute the code within this repository, ensure you meet the following prereq
   ```
 
   Ensure the following MATLAB toolboxes are installed:
-
   - `Statistics and Machine Learning Toolbox`
   - `Signal Processing Toolbox`
 
