@@ -27,8 +27,8 @@ def plotresults(cam, im, P, S, B, bbox):
         y_range=(h, 0),
         plot_width=round(600 * w / h),
         plot_height=600,
-        x_axis_label=f"pixel (1 - {str(w)})",
-        y_axis_label=f"pixel (1 - {str(h)})",
+        x_axis_label=f"pixel (1 - {w!s})",
+        y_axis_label=f"pixel (1 - {h!s})",
         title=cam["filename"],
         tools="box_zoom,pan,save,reset,wheel_zoom",
         active_scroll="wheel_zoom",
@@ -57,7 +57,7 @@ def plotresults(cam, im, P, S, B, bbox):
                 P[0, :, i],
                 P[1, :, i],
                 color=colors[i],
-                legend=f"image {str(i)}",
+                legend=f"image {i!s}",
                 line_width=1,
             )
             a.circle(P[2, :, i], P[3, :, i], color=colors[i], size=10, alpha=0.6)
@@ -66,7 +66,7 @@ def plotresults(cam, im, P, S, B, bbox):
         a.circle(P[2].ravel(), P[3].ravel(), color=colors[1], legend="Reprojections", size=10, alpha=0.6)
 
     # Plot 2 - 3d
-    x, y, z = np.split(B[:, :3], 3, axis=1)
+    x, _y, z = np.split(B[:, :3], 3, axis=1)
     b = plotting.figure(
         plot_width=350,
         plot_height=300,
@@ -136,7 +136,7 @@ def bokeh_colors(n):
 
 
 def imshow(im, im2=None, p1=None, p2=None):
-    """Displays image `im` and optionally `im2` using Bokeh, supports RGB and Greyscale images, overlays points `p1`,
+    """Displays image `im` and optionally `im2` using Bokeh, supports RGB and Grayscale images, overlays points `p1`,
     `p2`.
     """
     io.reset_output()
@@ -157,8 +157,8 @@ def imshow(im, im2=None, p1=None, p2=None):
         y_range=(h, 0),
         plot_width=round(800 * w / h),
         plot_height=800,
-        x_axis_label=f"pixel (1 - {str(w)})",
-        y_axis_label=f"pixel (1 - {str(h)})",
+        x_axis_label=f"pixel (1 - {w!s})",
+        y_axis_label=f"pixel (1 - {h!s})",
         title="image",
         tools="box_zoom,pan,save,reset,wheel_zoom,crosshair",
         active_scroll="wheel_zoom",
@@ -202,8 +202,8 @@ def imshow(im, im2=None, p1=None, p2=None):
             y_range=(h, 0),
             plot_width=round(600 * w / h),
             plot_height=600,
-            x_axis_label=f"pixel (1 - {str(w)})",
-            y_axis_label=f"pixel (1 - {str(h)})",
+            x_axis_label=f"pixel (1 - {w!s})",
+            y_axis_label=f"pixel (1 - {h!s})",
             title="image",
             tools="box_zoom,pan,save,reset,wheel_zoom,crosshair",
             active_scroll="wheel_zoom",

@@ -2,6 +2,8 @@
 
 name: Test Retry Action
 
+permissions: {}
+
 on:
   workflow_dispatch:
     inputs:

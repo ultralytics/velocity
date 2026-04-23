@@ -7,10 +7,11 @@ from utils.transforms import *
 
 # @profile
 def estimateWorldCameraPose(K, p, p3, t=np.array([0, 0, 1]), R=np.eye(3), findR=False):
-    """
-    Estimates camera pose from world coordinates using non-linear least squares.
+    """Estimates camera pose from world coordinates using non-linear least squares.
 
-    Args: K (array): camera matrix, p (2D array): image points, p3 (3D array): world points, t (array, optional): initial translation, R (array, optional): initial rotation, findR (bool, optional): if True estimates rotation. Returns: tuple (translation, rotation, residuals, projected points).
+    Args: K (array): camera matrix, p (2D array): image points, p3 (3D array): world points, t (array, optional):
+    initial translation, R (array, optional): initial rotation, findR (bool, optional): if True estimates rotation.
+    Returns: tuple (translation, rotation, residuals, projected points).
     """
     # Linear solution
     # Re, te = extrinsicsPlanar(p, p3, K)
@@ -38,7 +39,7 @@ def extrinsicsPlanar(imagePoints, worldPoints, K):  # Copy of MATLAB function by
     # s[uv1]' = K * [R t] * [xyz1]'
 
     # Compute homography.
-    H, inliers = cv2.findHomography(worldPoints, imagePoints, method=0)  # methods = 0, RANSAC = 8, LMEDS, RHO
+    H, _inliers = cv2.findHomography(worldPoints, imagePoints, method=0)  # methods = 0, RANSAC = 8, LMEDS, RHO
     h1, h2, h3 = H[:, 0], H[:, 1], H[:, 2]
 
     A = K.T
