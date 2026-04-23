@@ -65,8 +65,7 @@ def quat2dcm(q):  # 3 element quaternion representation (roll is norm(q))
 
 
 def dcm2quat(R):  # 3 element quaternion representation (roll is norm(q))
-    """
-    Converts direction cosine matrix `R` to quaternion; returns quaternion as [x, y, z, w].
+    """Converts direction cosine matrix `R` to quaternion; returns quaternion as [x, y, z, w].
 
     Expects `R` as a 3x3 matrix.
     """

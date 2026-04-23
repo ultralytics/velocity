@@ -53,8 +53,7 @@ def cv2calcOpticalFlowPyrLK(im1, im2, p1, p2hat=None, fbt=None, **lk_param):
 
 # @profile
 def KLTregional(im0, im, p0, T, lk_param, fbt=1.0, translateFlag=False):
-    """Tracks regional keypoints using the Kanade-Lucas-Tomasi (KLT) algorithm with forward-backward error
-    thresholding.
+    """Tracks regional keypoints using the Kanade-Lucas-Tomasi (KLT) algorithm with forward-backward error thresholding.
     """
     T = T.astype(np.float32)
     # 1. Warp current image to past image frame
@@ -85,7 +84,7 @@ def KLTregional(im0, im, p0, T, lk_param, fbt=1.0, translateFlag=False):
 
     # convert p back to im coordinates
     if translateFlag:
-        p = pa + (xy0 + [dx, dy]).astype(np.float32)
+        p = pa + ([*xy0, dx, dy]).astype(np.float32)
     else:
         p = addcol1(pa + xy0) @ T
 

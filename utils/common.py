@@ -65,8 +65,7 @@ def world2image(K, R, t, pw):  # MATLAB worldToImage copy
 
 
 def elaz(x):  # cartesian coordinate to spherical el and az angles
-    """Converts Cartesian coordinates `x` to spherical elevation and azimuth angles; input shape can be (3,) or (N,
-    3).
+    """Converts Cartesian coordinates `x` to spherical elevation and azimuth angles; input shape can be (3,) or (N, 3).
     """
     s = x.shape
     r = norm(x)
@@ -149,8 +148,7 @@ def pscale(p3):  # normalizes camera coordinates so last column = 1
 
 
 def worldPointsLicensePlate(country="EU"):  # Returns x, y coordinates of license plate
-    """
-    Returns x, y coordinates of a standard license plate for given country; defaults to EU.
+    """Returns x, y coordinates of a standard license plate for given country; defaults to EU.
 
     Usage: `worldPointsLicensePlate(country='Chile')`.
     """

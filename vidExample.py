@@ -25,7 +25,7 @@ def vidExamplefcn():
     else:
         frames = np.arange(4122, 4134)  # 40km/h
         n = len(frames)
-        imagename = [f"{patha}IMG_{str(i)}.JPG" for i in frames]
+        imagename = [f"{patha}IMG_{i!s}.JPG" for i in frames]
         filename = imagename[0]
 
     cam, cap = getCameraParams(filename, platform="iPhone 6s")
@@ -155,7 +155,7 @@ def vidExamplefcn():
         msvFrame = 5
         if i == msvFrame:
             # B[0:i, 3:6], p3[vg] = fcnNLS_batch(K, P[:,:,0:i], p3, B[0:i, 3:6])
-            tmsv, p3hatmsv = fcnMSV1_t(K, P, B, vg, i)
+            _tmsv, p3hatmsv = fcnMSV1_t(K, P, B, vg, i)
             p3[vg] = p3hatmsv - t
             vp = vg  # enable all points now
 
