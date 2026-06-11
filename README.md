@@ -12,7 +12,7 @@ This project aims to leverage advanced [ML](https://www.ultralytics.com/glossary
 
 ## 📸 Dataset
 
-Currently, a public [dataset](https://www.ultralytics.com/glossary/benchmark-dataset) is not provided with this repository. The methods are designed for integration with custom datasets. If you possess relevant imagery or wish to collaborate on applying these techniques, please contact us. For general dataset needs, explore resources like [Roboflow](https://roboflow.com/?ref=ultralytics) or public datasets like [COCO](https://docs.ultralytics.com/datasets/detect/coco/).
+This repository includes a small `data/` example set, but not a standalone public [benchmark dataset](https://www.ultralytics.com/glossary/benchmark-dataset). The methods are designed for integration with custom datasets. If you possess relevant imagery or wish to collaborate on applying these techniques, please contact us. For general dataset needs, explore resources like [Roboflow](https://roboflow.com/?ref=ultralytics) or public datasets like [COCO](https://docs.ultralytics.com/datasets/detect/coco/).
 
 # 📋 Requirements
 
@@ -64,7 +64,7 @@ If this repository contributes to your research or project, please cite it using
 
 We actively welcome contributions from the community! Whether it's fixing bugs, proposing new features, or enhancing documentation, your input is highly valued. Please see our [Contributing Guide](https://docs.ultralytics.com/help/contributing/) for more details on how to get started. We also encourage you to share your experiences with Ultralytics projects by completing our brief [Survey](https://www.ultralytics.com/survey?utm_source=github&utm_medium=social&utm_campaign=Survey). A huge 🙏 thank you to all our contributors!
 
-[![Ultralytics open-source contributors](https://raw.githubusercontent.com/ultralytics/assets/main/im/image-contributors.png)](https://github.com/ultralytics/ultralytics/graphs/contributors)
+[![Ultralytics open-source contributors](https://raw.githubusercontent.com/ultralytics/assets/main/im/image-contributors.png)](https://github.com/ultralytics/velocity/graphs/contributors)
 
 # ©️ License
 
