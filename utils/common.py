@@ -8,9 +8,7 @@ import torch
 
 # Set printoptions
 torch.set_printoptions(linewidth=320, precision=5, profile="long")
-np.set_printoptions(
-    linewidth=320, formatter={"float_kind": "{:11.5g}".format}
-)  # format short g, %precision=5
+np.set_printoptions(linewidth=320, formatter={"float_kind": "{:11.5g}".format})  # format short g, %precision=5
 
 
 def norm(x, axis=None):
@@ -43,26 +41,32 @@ def addcol1(x):  # append a ones column to right side
 
 
 def image2world3(R, t, p):  # image coordinate to world coordinate
-    """Convert image coordinates to world coordinates using rotation matrix `R`, translation vector `t`, and points `p`."""
+    """Convert image coordinates to world coordinates using rotation matrix `R`, translation vector `t`, and points `p`.
+    """
     return addcol1(p) @ R + t
 
 
 def image2world(K, R, t, p):  # MATLAB pointsToworld copy
-    """Convert image coordinates `p` to world coordinates using camera intrinsics `K`, rotation `R`, and translation `t`."""
+    """Convert image coordinates `p` to world coordinates using camera intrinsics `K`, rotation `R`, and translation
+    `t`.
+    """
     tform = np.concatenate([R[0:2, :], t[None]]) @ K
     pw = addcol1(p) @ np.linalg.inv(tform)
     return pw[:, 0:2] / pw[:, 2:3]
 
 
 def world2image(K, R, t, pw):  # MATLAB worldToImage copy
-    """Convert world coordinates `pw` to image coordinates using camera intrinsics `K`, rotation `R`, and translation `t`."""
+    """Convert world coordinates `pw` to image coordinates using camera intrinsics `K`, rotation `R`, and translation
+    `t`.
+    """
     camMatrix = np.concatenate([R, t[None]]) @ K
     p = addcol1(pw) @ camMatrix  # nx4 * 4x3
     return p[:, 0:2] / p[:, 2:3]
 
 
 def elaz(x):  # cartesian coordinate to spherical el and az angles
-    """Convert Cartesian coordinates `x` to spherical elevation and azimuth angles; input shape can be (3,) or (N, 3)."""
+    """Convert Cartesian coordinates `x` to spherical elevation and azimuth angles; input shape can be (3,) or (N, 3).
+    """
     s = x.shape
     r = norm(x)
     if len(s) == 1:
@@ -147,11 +151,7 @@ def worldPointsLicensePlate(country="EU"):  # Returns x, y coordinates of licens
     Usage: `worldPointsLicensePlate(country='Chile')`.
     """
     size = [0.3725, 0.1275, 0] if country == "Chile" else [0.520, 0.110, 0]
-    return (
-        np.array([[1, -1, 0], [1, 1, 0], [-1, 1, 0], [-1, -1, 0]], np.float32)
-        * np.array(size, np.float32)
-        / 2
-    )
+    return np.array([[1, -1, 0], [1, 1, 0], [-1, 1, 0], [-1, -1, 0]], np.float32) * np.array(size, np.float32) / 2
 
 
 def cam2ned():  # x_ned(3x5) = R * x_cam(3x5)   - EQUALS -   x_ned(5x3) = x_cam(5x3) * R'
