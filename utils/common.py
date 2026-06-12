@@ -41,32 +41,26 @@ def addcol1(x):  # append a ones column to right side
 
 
 def image2world3(R, t, p):  # image coordinate to world coordinate
-    """Convert image coordinates to world coordinates using rotation matrix `R`, translation vector `t`, and points `p`.
-    """
+    """Convert image points to world coordinates with rotation, translation, and point arrays."""
     return addcol1(p) @ R + t
 
 
 def image2world(K, R, t, p):  # MATLAB pointsToworld copy
-    """Convert image coordinates `p` to world coordinates using camera intrinsics `K`, rotation `R`, and translation
-    `t`.
-    """
+    """Convert image points to world coordinates with camera intrinsics, rotation, and translation."""
     tform = np.concatenate([R[0:2, :], t[None]]) @ K
     pw = addcol1(p) @ np.linalg.inv(tform)
     return pw[:, 0:2] / pw[:, 2:3]
 
 
 def world2image(K, R, t, pw):  # MATLAB worldToImage copy
-    """Convert world coordinates `pw` to image coordinates using camera intrinsics `K`, rotation `R`, and translation
-    `t`.
-    """
+    """Convert world points to image coordinates with camera intrinsics, rotation, and translation."""
     camMatrix = np.concatenate([R, t[None]]) @ K
     p = addcol1(pw) @ camMatrix  # nx4 * 4x3
     return p[:, 0:2] / p[:, 2:3]
 
 
 def elaz(x):  # cartesian coordinate to spherical el and az angles
-    """Convert Cartesian coordinates `x` to spherical elevation and azimuth angles; input shape can be (3,) or (N, 3).
-    """
+    """Convert Cartesian coordinates to spherical elevation and azimuth angles."""
     s = x.shape
     r = norm(x)
     if len(s) == 1:
