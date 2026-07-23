@@ -13,4 +13,4 @@ def filenamesplit(string):
 def printd(dictionary):  # print dictionary
     """Print each key-value pair in a dictionary, with keys aligned for readability."""
     for tag in dictionary:
-        print(f"{tag:>40s}: {dictionary[tag]}")
+        print(f"{tag!s:>40}: {dictionary[tag]}")
