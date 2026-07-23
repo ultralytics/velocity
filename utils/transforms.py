@@ -1,6 +1,10 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 
-from utils.common import *
+import math
+
+import numpy as np
+
+from utils.common import norm, sc2cc
 
 
 # @profile

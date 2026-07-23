@@ -1,6 +1,8 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 
-from utils.common import *
+import numpy as np
+
+from utils.common import pixel2uvec, rms, uvec
 from utils.NLS import fzK
 
 
@@ -67,7 +69,7 @@ def fcnMSV2_t(K, P, B, vg, i):  # solves for 1 camera translation
     z = P[0:2, vg, i - 1 : i + 1].ravel("F")
     max_iter = 300
     mdm = np.eye(6) * 1  # marquardt damping matrix (eye times damping coefficient)
-    for i in range(max_iter):
+    for iteration in range(max_iter):
         a = fcnNvintercept(np.vstack((u0[:-2], -x.reshape((2, 3)))), U)
         a1 = a + x[:3]
         a2 = a + x[3:6]
@@ -83,12 +85,12 @@ def fcnMSV2_t(K, P, B, vg, i):  # solves for 1 camera translation
 
         JT = (JT - zhat) / dx
         JTJ = JT @ JT.T  # J.T @ J
-        delta = np.linalg.inv(JTJ + mdm) @ JT @ residual * min(((i + 1) * 0.01) ** 2, 1)
-        print(f"{i:g}: f={rms(z - zhat):g}, x={rms(delta)}")
+        delta = np.linalg.inv(JTJ + mdm) @ JT @ residual * min(((iteration + 1) * 0.01) ** 2, 1)
+        print(f"{iteration:g}: f={rms(z - zhat):g}, x={rms(delta)}")
         x = x + delta
         if rms(delta) < 1e-8:
             break
-    if i == (max_iter - 1):
+    if iteration == (max_iter - 1):
         print("WARNING: fcnMSV2_t() reaching max iterations!")
     # print('%i steps, residual rms = %.5f' % (i,rms(z-zhat)))
     return x.astype(np.float32)
@@ -268,26 +270,34 @@ def fcnMSV1direct_t(K, P, B, vg, i):  # solves for 1 camera translation
     max_iter = 2000
     xi = np.zeros((max_iter, 3))
     r = np.zeros((max_iter, 1))
-    for i in range(1, max_iter):
-        g, r[i] = grad_func(x, u0, U, K, Z)  # computes the gradient of the stochastic function
+    for iteration in range(1, max_iter):
+        g, r[iteration] = grad_func(x, u0, U, K, Z)  # computes the gradient of the stochastic function
         m = beta_1 * m + (1 - beta_1) * g  # updates the moving averages of the gradient
         v = beta_2 * v + (1 - beta_2) * (g * g)  # updates the moving averages of the squared gradient
-        m_cap = m / (1 - (beta_1**i))  # calculates the bias-corrected estimates
-        v_cap = v / (1 - (beta_2**i))  # calculates the bias-corrected estimates
+        m_cap = m / (1 - (beta_1**iteration))  # calculates the bias-corrected estimates
+        v_cap = v / (1 - (beta_2**iteration))  # calculates the bias-corrected estimates
         delta = (alpha * m_cap) / (v_cap**0.5 + epsilon)
         x = x - delta  # updates the parameters
-        print(f"Residual {r[i]:g},    Params: {x[:]}")
-        xi[i] = x
+        print(f"Residual {r[iteration]:g},    Params: {x[:]}")
+        xi[iteration] = x
         if rms(delta) < 1e-5:  # convergence check
             break
+
+    import plotly.graph_objs as go
+    import plotly.offline as py
 
     py.plot(
         [
             go.Scatter(
-                x=xi[:i, 0],
-                y=xi[:i, 2],
+                x=xi[:iteration, 0],
+                y=xi[:iteration, 2],
                 mode="markers",
-                marker=dict(size="16", color=(np.log10(r[:i]).ravel()), colorscale="Viridis", showscale=True),
+                marker={
+                    "size": "16",
+                    "color": (np.log10(r[:iteration]).ravel()),
+                    "colorscale": "Viridis",
+                    "showscale": True,
+                },
             )
         ]
     )

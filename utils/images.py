@@ -1,9 +1,11 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 
-import cv2
+import math
 
-from utils.common import *
-from utils.strings import *
+import cv2
+import numpy as np
+
+from utils.strings import filenamesplit
 
 
 def boundingRect(x, imshape, border=(0, 0)):
@@ -31,8 +33,9 @@ def importEXIF(fullfilename):
     """Parses EXIF data from an image file specified by `fullfilename`, returning a dict with processed EXIF values."""
     import exifread
 
-    exif = exifread.process_file(open(fullfilename, "rb"), details=False)
-    for tag in exif.keys():
+    with open(fullfilename, "rb") as file:
+        exif = exifread.process_file(file, details=False)
+    for tag in exif:
         a = exif[tag].values[:]
         if type(a) is str and a.isnumeric():
             a = float(a)

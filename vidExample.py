@@ -1,12 +1,23 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
 
+import time
+
+import cv2
+import numpy as np
 import scipy
 
 import plots
-from utils.images import *
-from utils.KLT import *
-from utils.MSV import *
-from utils.NLS import *
+from utils.common import addcol0, image2world, norm, worldPointsLicensePlate
+from utils.images import (
+    boundingRect,
+    fcnEXIF2LLAT,
+    getCameraParams,
+    importEXIF,
+    insidebbox,
+)
+from utils.KLT import KLTmain
+from utils.MSV import fcnMSV1_t
+from utils.NLS import estimateWorldCameraPose
 
 
 # @profile
@@ -128,7 +139,7 @@ def vidExamplefcn():
             P = np.empty([5, p.shape[0], n], dtype=np.float32)  # KLT [x y valid]
             P[:] = np.nan
 
-            imfirst, im0_small, dt, dr, r, t0 = im, None, np.nan, 0, 0, B[0, 12]
+            imfirst, im0, im0_small, dt, dr, r, t0 = im, im, None, np.nan, 0, 0, B[0, 12]
         else:
             # KLT
             p, v, im0_small = KLTmain(im, im0, im0_small, p)
@@ -144,7 +155,7 @@ def vidExamplefcn():
             r += dr
             B[i, 3:6] = t
             B[i, 0:3] = B[0, 0:3] + t
-            del im0
+            im0 = im
 
         # py.plot([go.Histogram(x=residuals, nbinsx=30)])
 

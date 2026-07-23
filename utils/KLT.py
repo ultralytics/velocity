@@ -104,8 +104,8 @@ def KLTmain(im, im0, im0_small, p0):
     # Parameters for KLT
     EPS = cv2.TERM_CRITERIA_EPS
     COUNT = cv2.TERM_CRITERIA_COUNT
-    lk_coarse = dict(winSize=(15, 15), maxLevel=4, criteria=(EPS | COUNT, 10, 0.1))
-    lk_fine = dict(winSize=(51, 51), maxLevel=0, criteria=(EPS | COUNT, 30, 0.001))
+    lk_coarse = {"winSize": (15, 15), "maxLevel": 4, "criteria": (EPS | COUNT, 10, 0.1)}
+    lk_fine = {"winSize": (51, 51), "maxLevel": 0, "criteria": (EPS | COUNT, 30, 0.001)}
 
     # 1. Coarse tracking on 1/8 scale full image
     scale = 1 / 4
