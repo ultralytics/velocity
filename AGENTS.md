@@ -39,7 +39,7 @@ python vidExample.py                # main pipeline over data/IMG_4134.MOV, writ
 runExample  % MATLAB pipeline; needs https://github.com/ultralytics/functions-matlab on the path
 ```
 
-There is no test suite. CI is `.github/workflows/format.yml` (Ruff, docformatter, Prettier, codespell auto-applied to PR branches), `cla.yml`, and a manual-dispatch `test-retry.yml` exercising `ultralytics/actions/retry`.
+There is no test suite. CI is `.github/workflows/format.yml` (Ruff, docformatter, Prettier, codespell auto-applied to PR branches) and `cla.yml`.
 
 ## Architecture
 
