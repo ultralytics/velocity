@@ -14,7 +14,7 @@ This project aims to leverage advanced [ML](https://www.ultralytics.com/glossary
 
 This repository includes a small `data/` example set, but not a standalone public [benchmark dataset](https://www.ultralytics.com/glossary/benchmark-dataset). The methods are designed for integration with custom datasets. If you possess relevant imagery or wish to collaborate on applying these techniques, please contact us. For general dataset needs, explore resources like [Roboflow](https://roboflow.com/?ref=ultralytics) or public datasets like [COCO](https://docs.ultralytics.com/datasets/detect/coco/).
 
-# 📋 Requirements
+## 📋 Requirements
 
 To execute the code within this repository, ensure you meet the following prerequisites:
 
@@ -48,13 +48,13 @@ To execute the code within this repository, ensure you meet the following prereq
   - `Statistics and Machine Learning Toolbox`
   - `Signal Processing Toolbox`
 
-# 🏃 Run
+## 🏃 Run
 
 This repository offers various methods for vehicle speed estimation using SFM and ML. While detailed run instructions are context-dependent, the core scripts leverage the libraries listed in the requirements. If you're interested in applying these techniques or need specific guidance on execution, please don't hesitate to reach out or raise an [Issue](https://github.com/ultralytics/velocity/issues).
 
 <img src="https://github.com/ultralytics/velocity/blob/main/results.jpg" alt="Sample speed estimation results visualization">
 
-# 📚 Citation
+## 📚 Citation
 
 If this repository contributes to your research or project, please cite it using the following DOI:
 
