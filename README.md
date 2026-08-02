@@ -60,20 +60,20 @@ If this repository contributes to your research or project, please cite it using
 
 [![DOI](https://zenodo.org/badge/126519968.svg)](https://zenodo.org/badge/latestdoi/126519968)
 
-# 🤝 Contribute
+## 💡 Contribute
 
 We actively welcome contributions from the community! Whether it's fixing bugs, proposing new features, or enhancing documentation, your input is highly valued. Please see our [Contributing Guide](https://docs.ultralytics.com/help/contributing/) for more details on how to get started. We also encourage you to share your experiences with Ultralytics projects by completing our brief [Survey](https://www.ultralytics.com/survey?utm_source=github&utm_medium=social&utm_campaign=Survey). A huge 🙏 thank you to all our contributors!
 
-[![Ultralytics open-source contributors](https://raw.githubusercontent.com/ultralytics/assets/main/im/image-contributors.png)](https://github.com/ultralytics/velocity/graphs/contributors)
+[![Ultralytics open-source contributors](https://raw.githubusercontent.com/ultralytics/assets/main/im/image-contributors.png)](https://github.com/ultralytics/ultralytics/graphs/contributors)
 
-# ©️ License
+## 📄 License
 
 Ultralytics provides two licensing options to accommodate different use cases:
 
 - **AGPL-3.0 License**: This [OSI-approved](https://opensource.org/license/agpl-v3) open-source license is ideal for students, researchers, and enthusiasts keen on open collaboration and knowledge sharing. It promotes transparency and community involvement. See the [LICENSE](https://github.com/ultralytics/velocity/blob/main/LICENSE) file for full details.
 - **Enterprise License**: Designed for commercial applications, this license permits the seamless integration of Ultralytics software and AI models into commercial products and services, bypassing the open-source requirements of AGPL-3.0. If your project requires commercial licensing, please contact us through [Ultralytics Licensing](https://www.ultralytics.com/license).
 
-# 📬 Contact Us
+## 📮 Contact
 
 For bug reports, feature suggestions, and contributions, please visit [GitHub Issues](https://github.com/ultralytics/velocity/issues). For broader questions and discussions about this project or other Ultralytics initiatives, join our vibrant community on [Discord](https://discord.com/invite/ultralytics)!
 
