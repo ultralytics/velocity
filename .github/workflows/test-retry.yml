@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Test successful command
-        uses: ultralytics/actions/retry@glenn-jocher-patch-1
+        uses: ultralytics/actions/retry@main
         with:
           run: |
             echo "This should succeed on first try"
@@ -29,7 +29,7 @@ jobs:
             echo "Current directory: $PWD"
 
       - name: Test with environment variables
-        uses: ultralytics/actions/retry@glenn-jocher-patch-1
+        uses: ultralytics/actions/retry@main
         env:
           TEST_VAR: "Hello from env"
         with:
@@ -38,7 +38,7 @@ jobs:
             echo "GitHub workspace: $GITHUB_WORKSPACE"
 
       - name: Test with working directory
-        uses: ultralytics/actions/retry@glenn-jocher-patch-1
+        uses: ultralytics/actions/retry@main
         with:
           working-directory: /tmp
           run: |
@@ -47,7 +47,7 @@ jobs:
             ls -la
 
       - name: Test command that might fail
-        uses: ultralytics/actions/retry@glenn-jocher-patch-1
+        uses: ultralytics/actions/retry@main
         if: ${{ inputs.should_fail }}
         with:
           max_attempts: 3
@@ -57,7 +57,7 @@ jobs:
             exit 1
 
       - name: Test timeout handling
-        uses: ultralytics/actions/retry@glenn-jocher-patch-1
+        uses: ultralytics/actions/retry@main
         if: ${{ inputs.timeout_test }}
         with:
           timeout_minutes: 1
@@ -69,7 +69,7 @@ jobs:
             echo "This should timeout before reaching here"
 
       - name: Test multi-line complex command
-        uses: ultralytics/actions/retry@glenn-jocher-patch-1
+        uses: ultralytics/actions/retry@main
         with:
           max_attempts: 2
           run: |
@@ -92,7 +92,7 @@ jobs:
             python test.py
 
       - name: Test with Docker
-        uses: ultralytics/actions/retry@glenn-jocher-patch-1
+        uses: ultralytics/actions/retry@main
         with:
           timeout_minutes: 10
           max_attempts: 3
