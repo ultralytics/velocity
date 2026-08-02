@@ -31,8 +31,8 @@ After opening a PR:
 ## Commands
 
 ```bash
-pip3 install -U -r requirements.txt  # numpy, scipy, torch, opencv-python, exifread, bokeh
-python vidExample.py                 # main pipeline over data/IMG_4134.MOV, writes "bokeh plots.html"
+pip3 install -U -r requirements.txt # numpy, scipy, torch, opencv-python, exifread, bokeh
+python vidExample.py                # main pipeline over data/IMG_4134.MOV, writes "bokeh plots.html"
 ```
 
 ```matlab
