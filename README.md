@@ -1,18 +1,18 @@
-<a href="https://www.ultralytics.com/"><img src="https://raw.githubusercontent.com/ultralytics/assets/main/logo/Ultralytics_Logotype_Original.svg" width="320" alt="Ultralytics logo"></a>
+<a href="https://www.ultralytics.com"><img src="https://raw.githubusercontent.com/ultralytics/assets/main/logo/Ultralytics_Logotype_Original.svg" width="320" alt="Ultralytics logo"></a>
 
 # 🚗 Introduction
 
 Welcome to the [Ultralytics Velocity](https://github.com/ultralytics/velocity) repository! Here, we delve into the intersection of [Machine Learning (ML)](https://www.ultralytics.com/glossary/machine-learning-ml) and [Structure From Motion (SFM)](https://en.wikipedia.org/wiki/Structure_from_motion) to estimate the speed of vehicles using image analysis. Our objective is to enhance vehicle speed estimation methodologies and provide a foundation for future research and practical applications in fields like [traffic management](https://www.ultralytics.com/blog/ai-in-traffic-management-from-congestion-to-coordination) and [autonomous systems](https://www.ultralytics.com/glossary/autonomous-vehicles).
 
-[![Ultralytics Actions](https://github.com/ultralytics/velocity/actions/workflows/format.yml/badge.svg)](https://github.com/ultralytics/velocity/actions/workflows/format.yml) <a href="https://discord.com/invite/ultralytics"><img alt="Discord" src="https://img.shields.io/discord/1089800235347353640?logo=discord&logoColor=white&label=Discord&color=blue"></a> <a href="https://community.ultralytics.com/"><img alt="Ultralytics Forums" src="https://img.shields.io/discourse/users?server=https%3A%2F%2Fcommunity.ultralytics.com&logo=discourse&label=Forums&color=blue"></a> <a href="https://reddit.com/r/ultralytics"><img alt="Ultralytics Reddit" src="https://img.shields.io/reddit/subreddit-subscribers/ultralytics?style=flat&logo=reddit&logoColor=white&label=Reddit&color=blue"></a>
+[![Ultralytics Actions](https://github.com/ultralytics/velocity/actions/workflows/format.yml/badge.svg)](https://github.com/ultralytics/velocity/actions/workflows/format.yml) <a href="https://discord.com/invite/ultralytics"><img alt="Discord" src="https://img.shields.io/discord/1089800235347353640?logo=discord&logoColor=white&label=Discord&color=blue"></a> <a href="https://community.ultralytics.com"><img alt="Ultralytics Forums" src="https://img.shields.io/discourse/users?server=https%3A%2F%2Fcommunity.ultralytics.com&logo=discourse&label=Forums&color=blue"></a> <a href="https://www.reddit.com/r/ultralytics/"><img alt="Ultralytics Reddit" src="https://img.shields.io/reddit/subreddit-subscribers/ultralytics?style=flat&logo=reddit&logoColor=white&label=Reddit&color=blue"></a>
 
 ## 🎯 Project Objectives
 
-This project aims to leverage advanced [ML](https://www.ultralytics.com/glossary/machine-learning-ml) and SFM techniques to accurately estimate vehicle speeds from various forms of imagery. By developing these methods, we hope to contribute valuable tools applicable to traffic monitoring, [autonomous driving systems](https://www.ultralytics.com/solutions/ai-in-automotive), and road safety analysis.
+This project aims to leverage advanced [ML](https://www.ultralytics.com/glossary/machine-learning-ml) and SFM techniques to accurately estimate vehicle speeds from various forms of imagery. By developing these methods, we hope to contribute valuable tools applicable to traffic monitoring, [autonomous driving systems](https://www.ultralytics.com/solutions/computer-vision-in-automotive), and road safety analysis.
 
 ## 📸 Dataset
 
-This repository includes a small `data/` example set, but not a standalone public [benchmark dataset](https://www.ultralytics.com/glossary/benchmark-dataset). The methods are designed for integration with custom datasets. If you possess relevant imagery or wish to collaborate on applying these techniques, please contact us. For general dataset needs, explore resources like [Roboflow](https://roboflow.com/?ref=ultralytics) or public datasets like [COCO](https://docs.ultralytics.com/datasets/detect/coco/).
+This repository includes a small `data/` example set, but not a standalone public [benchmark dataset](https://www.ultralytics.com/glossary/benchmark-dataset). The methods are designed for integration with custom datasets. If you possess relevant imagery or wish to collaborate on applying these techniques, please contact us. For general dataset needs, explore resources like [Roboflow](https://roboflow.com/?ref=ultralytics) or public datasets like [COCO](https://docs.ultralytics.com/datasets/detect/coco).
 
 ## 📋 Requirements
 
@@ -62,7 +62,7 @@ If this repository contributes to your research or project, please cite it using
 
 ## 💡 Contribute
 
-We actively welcome contributions from the community! Whether it's fixing bugs, proposing new features, or enhancing documentation, your input is highly valued. Please see our [Contributing Guide](https://docs.ultralytics.com/help/contributing/) for more details on how to get started. We also encourage you to share your experiences with Ultralytics projects by completing our brief [Survey](https://www.ultralytics.com/survey?utm_source=github&utm_medium=social&utm_campaign=Survey). A huge 🙏 thank you to all our contributors!
+We actively welcome contributions from the community! Whether it's fixing bugs, proposing new features, or enhancing documentation, your input is highly valued. Please see our [Contributing Guide](https://docs.ultralytics.com/help/contributing) for more details on how to get started. We also encourage you to share your experiences with Ultralytics projects by completing our brief [Survey](https://www.ultralytics.com/survey?utm_source=github&utm_medium=social&utm_campaign=Survey). A huge 🙏 thank you to all our contributors!
 
 [![Ultralytics open-source contributors](https://raw.githubusercontent.com/ultralytics/assets/main/im/image-contributors.png)](https://github.com/ultralytics/ultralytics/graphs/contributors)
 
@@ -70,7 +70,7 @@ We actively welcome contributions from the community! Whether it's fixing bugs, 
 
 Ultralytics provides two licensing options to accommodate different use cases:
 
-- **AGPL-3.0 License**: This [OSI-approved](https://opensource.org/license/agpl-v3) open-source license is ideal for students, researchers, and enthusiasts keen on open collaboration and knowledge sharing. It promotes transparency and community involvement. See the [LICENSE](https://github.com/ultralytics/velocity/blob/main/LICENSE) file for full details.
+- **AGPL-3.0 License**: This [OSI-approved](https://opensource.org/license/agpl-3.0) open-source license is ideal for students, researchers, and enthusiasts keen on open collaboration and knowledge sharing. It promotes transparency and community involvement. See the [LICENSE](https://github.com/ultralytics/velocity/blob/main/LICENSE) file for full details.
 - **Enterprise License**: Designed for commercial applications, this license permits the seamless integration of Ultralytics software and AI models into commercial products and services, bypassing the open-source requirements of AGPL-3.0. If your project requires commercial licensing, please contact us through [Ultralytics Licensing](https://www.ultralytics.com/license).
 
 ## 📮 Contact
